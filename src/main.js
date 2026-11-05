@@ -4,6 +4,7 @@ const path = require('node:path');
 const fs = require('node:fs');
 const readline = require('node:readline');
 const { readLhmTemps } = require('./lhm');
+const updater = require('./updater');
 
 const BASE_WIDTH = 292;   // must match body width in renderer/style.css
 const DETAIL_EXTRA = 308; // detail panel (300) + gap (8); body.expanded is 600px
@@ -14,6 +15,8 @@ if (!app.requestSingleInstanceLock()) {
 }
 
 nativeTheme.themeSource = 'dark';
+// Must match build.appId so Windows notifications are attributed to the installed app.
+app.setAppUserModelId('com.when630.whenpc');
 
 // ---------- settings ----------
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
@@ -209,6 +212,9 @@ ipcMain.on('config:set', (_e, patch) => {
 ipcMain.on('settings:open', openSettings);
 ipcMain.on('widget:reset-position', resetPosition);
 ipcMain.on('widget:toggle-expand', () => setExpanded(!config.expanded));
+ipcMain.handle('update:get', () => updater.getState());
+ipcMain.on('update:check', () => updater.check());
+ipcMain.on('update:install', () => updater.install());
 
 ipcMain.on('widget:resize', (e, height) => {
   if (!win || e.sender !== win.webContents || !Number.isFinite(height)) return;
@@ -241,6 +247,9 @@ function buildMenu() {
     { label: '위젯 보이기', type: 'checkbox', checked: !!win?.isVisible(), click: (i) => (i.checked ? win?.showInactive() : win?.hide()) },
     { label: '위치 고정 (클릭 통과)', type: 'checkbox', checked: config.locked, click: (i) => applyConfig({ locked: i.checked }) },
     { label: '설정…', click: openSettings },
+    ...(updater.getState().status === 'downloaded'
+      ? [{ label: `업데이트 설치 후 재시작 (v${updater.getState().version})`, click: updater.install }]
+      : []),
     { type: 'separator' },
     { label: '종료', click: () => app.quit() },
   ]);
@@ -329,6 +338,10 @@ app.whenReady().then(() => {
   createTray();
   startCollector();
   pollLhm();
+  updater.init((state) => {
+    if (settingsWin && !settingsWin.isDestroyed()) settingsWin.webContents.send('update', state);
+    refreshMenu();
+  });
   if (process.env.WHENPC_OPEN_SETTINGS) openSettings();
 
   // Dev aid: WHENPC_SNAPSHOT=out.png saves a capture of the widget (and settings, if open) after a delay, then quits.
@@ -337,6 +350,7 @@ app.whenReady().then(() => {
       const out = process.env.WHENPC_SNAPSHOT;
       console.log('body class:', await win.webContents.executeJavaScript('document.body.className'), 'bounds:', JSON.stringify(win.getBounds()));
       fs.writeFileSync(out, (await win.webContents.capturePage()).toPNG());
+      if (settingsWin) await settingsWin.webContents.executeJavaScript(`document.querySelector('main').scrollTop = 1e6`);
       if (settingsWin) fs.writeFileSync(out.replace(/\.png$/i, '-settings.png'), (await settingsWin.webContents.capturePage()).toPNG());
       app.quit();
     }, Number(process.env.WHENPC_SNAPSHOT_DELAY || 8000));

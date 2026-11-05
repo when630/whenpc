@@ -91,3 +91,25 @@ function render(c) {
 
 window.widget.onConfig(render);
 window.widget.getConfig().then(render);
+
+// ---------- update ----------
+function renderUpdate(u) {
+  $('appVersion').textContent = `v${u.current}`;
+  const btn = $('updateBtn');
+  const status = {
+    dev: '개발 모드에서는 자동 업데이트가 꺼져 있습니다',
+    idle: '시작 후 자동으로 확인하고, 4시간마다 다시 확인합니다',
+    checking: '업데이트 확인 중…',
+    latest: '최신 버전입니다',
+    downloading: `v${u.version} 내려받는 중… ${u.percent}%`,
+    downloaded: `v${u.version} 준비됨 · 재시작하면 설치됩니다`,
+    error: `확인 실패: ${u.error || '알 수 없는 오류'}`,
+  }[u.status];
+  $('updateStatus').textContent = status || '';
+  btn.hidden = ['dev', 'checking', 'downloading'].includes(u.status);
+  btn.textContent = u.status === 'downloaded' ? '재시작해 설치' : '지금 확인';
+  btn.classList.toggle('primary', u.status === 'downloaded');
+  btn.onclick = () => (u.status === 'downloaded' ? window.widget.installUpdate() : window.widget.checkUpdate());
+}
+window.widget.onUpdate(renderUpdate);
+window.widget.getUpdate().then(renderUpdate);

@@ -39,3 +39,20 @@ Windows는 드라이버 없이 CPU 코어 온도를 제공하지 않는다. 그�
 ## 개발용
 
 `WHENPC_SNAPSHOT=out.png npm start`로 실행하면 8초 뒤 위젯 화면을 PNG로 저장하고 종료한다. 대기 시간은 `WHENPC_SNAPSHOT_DELAY`(ms)로 조정한다.
+
+## 배포와 자동 업데이트
+
+설치판(NSIS)은 [GitHub Releases](https://github.com/when630/whenpc/releases)로 배포한다. 설치된 앱은 electron-updater로 시작 10초 후와 이후 4시간마다 새 릴리스를 확인한다. 새 버전은 백그라운드에서 받아 두고 알림을 띄운다. 알림을 누르거나 설정 창 또는 트레이의 "업데이트 설치"를 누르면 바로 재시작해 설치하고, 그냥 두면 다음 종료 때 설치된다. 개발 모드(`npm start`)에서는 업데이트가 꺼져 있다.
+
+새 버전 배포:
+
+```sh
+npm version patch          # package.json 버전을 올리고 vX.Y.Z 태그를 만든다
+git push --follow-tags     # 태그 push → GitHub Actions(.github/workflows/release.yml)가 빌드해 릴리스에 올린다
+```
+
+로컬 빌드만: `npm run dist` → `dist/whenpc-Setup-<버전>.exe`
+
+설치 파일은 코드 서명이 없어서 처음 실행할 때 SmartScreen 경고가 뜰 수 있다("추가 정보 → 실행").
+
+앱 아이콘은 `python build/make-icon.py`로 다시 만든다.

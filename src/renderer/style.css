@@ -80,7 +80,8 @@ body.no-clock #brand { display: block; }
   transition: opacity 0.2s, background 0.2s, color 0.2s;
 }
 .hbtn:hover { background: rgba(255, 255, 255, 0.08); color: var(--text); }
-#expand { margin-left: auto; opacity: 0.6; }
+#settings { margin-left: auto; }
+#expand { opacity: 0.6; }
 #expand[aria-pressed="true"] { opacity: 1; color: var(--cpu); background: rgba(45, 212, 191, 0.12); }
 #settings { opacity: 0; }
 #card:hover #settings, #card:hover #expand { opacity: 1; }

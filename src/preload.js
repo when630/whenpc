@@ -10,4 +10,8 @@ contextBridge.exposeInMainWorld('widget', {
   openSettings: () => ipcRenderer.send('settings:open'),
   resetPosition: () => ipcRenderer.send('widget:reset-position'),
   toggleExpand: () => ipcRenderer.send('widget:toggle-expand'),
+  getUpdate: () => ipcRenderer.invoke('update:get'),
+  onUpdate: (cb) => ipcRenderer.on('update', (_e, state) => cb(state)),
+  checkUpdate: () => ipcRenderer.send('update:check'),
+  installUpdate: () => ipcRenderer.send('update:install'),
 });
