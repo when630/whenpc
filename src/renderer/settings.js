@@ -1,7 +1,7 @@
 const $ = (id) => document.getElementById(id);
 
 const ITEMS = [
-  { k: 'clock', label: '시계', color: '--clock' },
+  { k: 'clock', label: '시계', color: '--ink' },
   { k: 'cpu', label: 'CPU', color: '--cpu', desc: '사용률 · 클럭' },
   { k: 'mem', label: '메모리', color: '--mem', desc: '사용량 · 커밋' },
   { k: 'gpu', label: 'GPU', color: '--gpu', desc: '사용률 · 엔진별' },
@@ -74,9 +74,64 @@ for (const id of ['showGraphs', 'alwaysOnTop', 'locked', 'openAtLogin']) {
 $('close').addEventListener('click', () => window.close());
 $('resetPosition').addEventListener('click', () => window.widget.resetPosition());
 
+// ---------- skin & theme ----------
+let catalog = { skins: [], themes: [] };
+
+function radio(el, checked) {
+  el.setAttribute('role', 'radio');
+  el.setAttribute('aria-checked', String(checked));
+}
+
+function renderSkins(c) {
+  $('skins').replaceChildren(...catalog.skins.map((s) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'skin-card';
+    radio(b, s.id === c.skin);
+    const name = document.createElement('b');
+    name.textContent = s.name;
+    const note = document.createElement('span');
+    note.textContent = s.note;
+    b.append(name, note);
+    b.addEventListener('click', () => set({ skin: s.id }));
+    return b;
+  }));
+}
+
+function renderThemes(c) {
+  $('themes').replaceChildren(...catalog.themes.filter((t) => t.skin === c.skin).map((t) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'theme-chip';
+    b.title = t.note;
+    radio(b, t.id === c.theme);
+    const sample = document.createElement('span');
+    sample.className = 'sample';
+    sample.textContent = 'Aa';
+    sample.style.setProperty('--s-bg', t.colors[0]);
+    sample.style.setProperty('--s-ink', t.colors[1]);
+    sample.style.setProperty('--s-sig', t.colors[2]);
+    const name = document.createElement('span');
+    name.className = 'name';
+    name.textContent = t.name;
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = t.note;
+    b.append(sample, name, note);
+    b.addEventListener('click', () => set({ theme: t.id }));
+    return b;
+  }));
+}
+
 // ---------- sync ----------
 function render(c) {
   config = c;
+  const html = document.documentElement;
+  html.dataset.skin = c.skin;
+  html.dataset.theme = c.theme;
+  html.toggleAttribute('data-dark', !!c.themeDark);
+  renderSkins(c);
+  renderThemes(c);
   for (const [k, { input, row, parent }] of Object.entries(itemInputs)) {
     input.checked = !!c.items[k];
     row.classList.toggle('disabled', !!parent && !c.items[parent]);
@@ -90,7 +145,10 @@ function render(c) {
 }
 
 window.widget.onConfig(render);
-window.widget.getConfig().then(render);
+window.widget.getThemes().then((t) => {
+  catalog = t;
+  return window.widget.getConfig();
+}).then(render);
 
 // ---------- update ----------
 function renderUpdate(u) {

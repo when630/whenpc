@@ -24,8 +24,25 @@ npm start
 | `src/main.js` | 창·트레이·설정을 관리하고, 수집기 프로세스를 띄워 결과를 렌더러로 전달한다. 수집기가 죽으면 다시 띄운다. |
 | `src/lhm.js` | (선택) LibreHardwareMonitor에서 온도를 읽는다. |
 | `src/renderer/` | 위젯(`index.html`)과 설정 창(`settings.html`) UI. 스파크라인은 canvas로 그린다. |
+| `src/updater.js` | GitHub Releases 자동 업데이트(electron-updater). |
 
 GPU 사용률은 작업 관리자와 같은 방식으로 계산한다. 엔진별로 프로세스 사용률을 합산한 뒤 가장 바쁜 엔진의 값을 쓴다.
+
+## 스킨과 테마
+
+whenterminal과 같은 스킨 7개(POSTER · SOFT · TUI · ZEN · GLASS · IDE · SKETCH)와 테마 34개를 설정 창에서 고른다. 스킨은 모양(선, 모서리, 글꼴, 배치)을, 테마는 색을 정한다. 테마는 스킨마다 따로 있고, 스킨을 바꾸면 그 스킨에서 마지막으로 고른 테마로 돌아간다. 위젯, 상세 패널, 설정 창에 모두 적용된다.
+
+- 색 토큰(`src/renderer/themes.css`)과 스킨·테마 목록(`src/themes.json`)은 whenterminal에서 생성한다. 손으로 고치지 말고, whenterminal이 바뀌면 `node scripts/import-whenterminal-themes.mjs [whenterminal 경로]`로 다시 가져온다(기본 경로 `../whenterminal`).
+- 스킨 모양은 whenpc 화면에 맞게 다시 구현했다(`src/renderer/ui.css`, `style.css`, `settings.css`의 `data-skin` 규칙).
+- 글꼴은 whenterminal과 같은 패키지를 쓴다: Pretendard, Archivo, Black Han Sans, Geist Mono, Noto Serif KR, Gaegu. 설치 파일에는 실제로 쓰는 굵기의 woff2만 넣는다(`package.json`의 `build.files`).
+
+## 아이콘
+
+whenterminal 앱 아이콘과 같은 계열(검정·흰색에 신호색 빨강 하나, 둥근 정사각형 타일)이다. 원본은 `build/icons/*.svg`이고 기본은 `bars`다.
+
+```sh
+npx electron scripts/render-icons.cjs   # SVG → PNG, 미리보기 build/icons/preview.png, build/icon.png와 src/assets/icon.png 갱신
+```
 
 ## 온도
 
@@ -55,4 +72,3 @@ git push --follow-tags     # 태그 push → GitHub Actions(.github/workflows/re
 
 설치 파일은 코드 서명이 없어서 처음 실행할 때 SmartScreen 경고가 뜰 수 있다("추가 정보 → 실행").
 
-앱 아이콘은 `python build/make-icon.py`로 다시 만든다.

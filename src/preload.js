@@ -5,6 +5,7 @@ contextBridge.exposeInMainWorld('widget', {
   onCollectorError: (cb) => ipcRenderer.on('collector-error', (_e, msg) => cb(msg)),
   onConfig: (cb) => ipcRenderer.on('config', (_e, config) => cb(config)),
   getConfig: () => ipcRenderer.invoke('config:get'),
+  getThemes: () => ipcRenderer.invoke('themes:get'),
   setConfig: (patch) => ipcRenderer.send('config:set', patch),
   resize: (height) => ipcRenderer.send('widget:resize', height),
   openSettings: () => ipcRenderer.send('settings:open'),

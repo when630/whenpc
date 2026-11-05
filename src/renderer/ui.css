@@ -1,0 +1,210 @@
+/* Shared UI layer for the widget and the settings window.
+   Colors come from whenterminal's themes (themes.css, generated); this file maps them to whenpc's
+   UI tokens and sets each skin's shape (fonts, radii, borders, rings). Skins are re-implemented for
+   whenpc's markup — the ids, names and intent follow whenterminal's skins. */
+
+/* Archivo 900 registered at weight 400 so "WT Display" renders Latin/digits in Archivo, Hangul in Black Han Sans (as in whenterminal). */
+@font-face {
+  font-family: 'WT Display';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('../../node_modules/@fontsource/archivo/files/archivo-latin-900-normal.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+:root {
+  --font: 'Pretendard Variable', Pretendard, 'Apple SD Gothic Neo', 'Malgun Gothic', system-ui, sans-serif;
+  --disp: 'Archivo', 'Pretendard Variable', sans-serif;
+  --kr: 'WT Display', 'Black Han Sans', 'Pretendard Variable', sans-serif;
+  --mono: 'Geist Mono', 'SF Mono', 'Cascadia Code', 'D2Coding', Consolas, monospace;
+  --serif: 'Noto Serif KR', Batang, serif;
+  --hand: 'Gaegu', 'Pretendard Variable', cursive;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---- UI tokens (defaults = soft-ish; skins override below) ---- */
+  --surface: var(--paper);         /* card / page background */
+  --surface-image: none;           /* extra background layers (glass blobs, sketch grid) */
+  --tile: var(--wash);             /* tile background */
+  --text: var(--ink);
+  --muted: var(--gray);
+  --faint: color-mix(in srgb, var(--ink) 9%, transparent);
+  --border: color-mix(in srgb, var(--ink) 12%, transparent);
+  --ac: var(--ink);                /* accent: switches, selected tab, pressed buttons */
+  --on-ac: var(--paper);
+
+  /* metric colors: whenterminal's syntax palette is tuned per theme for contrast on --paper */
+  --cpu: var(--syn-type);
+  --mem: var(--syn-keyword);
+  --gpu: var(--syn-number);
+  --disk: var(--syn-string);
+  --disk2: var(--signal-ink);
+  --net: var(--syn-attr);
+  --net2: var(--syn-keyword);
+  --temp: var(--signal);
+  --warn: var(--syn-number);
+  --crit: var(--signal);
+
+  --font-ui: var(--font);
+  --font-num: var(--font);
+  --font-title: var(--font);
+  --font-label: var(--font);
+  --title-weight: 300;
+  --num-weight: 600;
+  --label-weight: 600;
+  --label-case: none;
+  --label-spacing: 0.01em;
+
+  --r-card: 16px;
+  --r-tile: 12px;
+  --r-btn: 8px;
+  --card-border: 1px solid var(--border);
+  --card-shadow: none;
+  --tile-border-color: transparent;
+  --tile-border-width: 1px;
+  --tile-shadow: none;
+  --ring-w: 4.5px;
+  --ring-cap: round;
+  --ring-glow: none;
+}
+
+/* ---------- POSTER: thick black rules, big type, no radius ---------- */
+:root[data-skin='poster'] {
+  --tile: transparent;
+  --border: var(--line);
+  --ac: var(--ink);
+  --font-title: var(--kr);
+  --font-num: var(--disp);
+  --font-label: var(--kr);
+  --title-weight: 400;
+  --num-weight: 900;
+  --label-weight: 400;
+  --label-case: uppercase;
+  --label-spacing: 0.02em;
+  --r-card: 0;
+  --r-tile: 0;
+  --r-btn: 0;
+  --card-border: 2px solid var(--line);
+  --ring-w: 6px;
+  --ring-cap: butt;
+}
+
+/* ---------- SOFT: rounded cards, faint shadows, hairlines ---------- */
+:root[data-skin='soft'] {
+  --surface: var(--bg);
+  --tile: var(--card);
+  --ac: var(--accent);
+  --on-ac: var(--on-accent);
+  --border: color-mix(in srgb, var(--ink) 10%, transparent);
+  --r-card: 16px;
+  --r-tile: 12px;
+  --r-btn: 7px;
+  --card-border: 0.5px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  --card-shadow: 0 10px 30px var(--shadow);
+  --tile-shadow: 0 0 0 0.5px color-mix(in srgb, var(--ink) 12%, transparent), 0 1px 2px var(--shadow);
+}
+
+/* ---------- TUI: monospace, titled boxes, no radius or shadow ---------- */
+:root[data-skin='tui'] {
+  --tile: transparent;
+  --border: var(--line);
+  --font-ui: var(--mono);
+  --font-num: var(--mono);
+  --font-title: var(--mono);
+  --font-label: var(--mono);
+  --title-weight: 500;
+  --num-weight: 500;
+  --label-weight: 500;
+  --label-case: uppercase;
+  --r-card: 0;
+  --r-tile: 0;
+  --r-btn: 0;
+  --card-border: 1px solid var(--line);
+  --tile-border-color: var(--line);
+  --ring-w: 3px;
+  --ring-cap: butt;
+}
+
+/* ---------- ZEN: no lines or panels, whitespace and type ---------- */
+:root[data-skin='zen'] {
+  --tile: transparent;
+  --border: var(--line);
+  --font-title: var(--serif);
+  --font-label: var(--serif);
+  --title-weight: 400;
+  --num-weight: 500;
+  --label-weight: 700;
+  --r-card: 4px;
+  --r-tile: 0;
+  --r-btn: 4px;
+  --card-border: 0 solid transparent;
+  --ring-w: 2.5px;
+  --ring-cap: round;
+}
+
+/* ---------- GLASS: translucent panels over a blurred, colored wall ---------- */
+:root[data-skin='glass'] {
+  --surface: var(--wall);
+  --surface-image:
+    radial-gradient(circle 260px at 6% 2%, var(--blob-a), transparent 72%),
+    radial-gradient(circle 240px at 96% 42%, var(--blob-b), transparent 72%),
+    radial-gradient(circle 220px at 38% 104%, var(--blob-c), transparent 72%),
+    radial-gradient(circle 180px at 62% 8%, var(--blob-d), transparent 72%);
+  --tile: var(--glass);
+  --tile-border-color: var(--glass-stroke);
+  --tile-shadow: 0 6px 24px var(--shadow), inset 0 1px 0 var(--glass-shine);
+  --ac: var(--ink);
+  --on-ac: var(--paper);
+  --r-card: 20px;
+  --r-tile: 14px;
+  --r-btn: 999px;
+  --card-border: 1px solid var(--glass-stroke);
+  --card-shadow: 0 10px 40px var(--shadow), inset 0 1px 0 var(--glass-shine);
+  --ring-glow: drop-shadow(0 0 4px var(--c));
+}
+
+/* ---------- IDE: editor chrome, title bar and status bar ---------- */
+:root[data-skin='ide'] {
+  --surface: var(--paper);
+  --tile: var(--wash);
+  --border: var(--line);
+  --ac: var(--accent);
+  --on-ac: var(--accent-fg);
+  --font-ui: 'Segoe UI Variable Text', 'Segoe UI', var(--font);
+  --font-num: 'Cascadia Code', var(--mono);
+  --font-title: var(--font-ui);
+  --font-label: var(--font-ui);
+  --title-weight: 400;
+  --num-weight: 500;
+  --r-card: 6px;
+  --r-tile: 4px;
+  --r-btn: 3px;
+  --card-border: 1px solid var(--line);
+  --tile-border-color: var(--line);
+  --ring-w: 4px;
+  --ring-cap: butt;
+}
+
+/* ---------- SKETCH: grid canvas, floating islands, handwriting ---------- */
+:root[data-skin='sketch'] {
+  --surface: var(--canvas);
+  --surface-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  --tile: var(--island);
+  --ac: var(--accent);
+  --on-ac: var(--paper);
+  --font-title: var(--hand);
+  --font-label: var(--hand);
+  --font-num: var(--hand);
+  --title-weight: 700;
+  --num-weight: 700;
+  --label-weight: 700;
+  --r-card: 14px;
+  --r-tile: 10px;
+  --r-btn: 8px;
+  --card-border: 1px solid color-mix(in srgb, var(--ink) 9%, transparent);
+  --tile-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 9%, transparent), 0 1px 3px var(--shadow), 0 8px 22px var(--shadow);
+  --ring-w: 5px;
+  --ring-cap: round;
+}

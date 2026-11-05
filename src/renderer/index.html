@@ -2,8 +2,18 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data:">
   <title>whenpc</title>
+  <link rel="stylesheet" href="../../node_modules/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/archivo/900.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/black-han-sans/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/geist-mono/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/geist-mono/500.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/noto-serif-kr/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/gaegu/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/gaegu/700.css">
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -24,6 +34,7 @@
     <div id="tiles"></div>
     <div id="error" hidden></div>
     <div id="empty" hidden>표시할 항목이 없습니다 · 설정에서 켜 주세요</div>
+    <div id="statusbar"><span id="sb-left"></span><span id="sb-right"></span></div>
   </main>
 
   <aside id="detail" class="panel" hidden>

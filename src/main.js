@@ -5,6 +5,8 @@ const fs = require('node:fs');
 const readline = require('node:readline');
 const { readLhmTemps } = require('./lhm');
 const updater = require('./updater');
+const { skins: SKINS, themes: THEMES } = require('./themes.json');
+const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
 
 const BASE_WIDTH = 292;   // must match body width in renderer/style.css
 const DETAIL_EXTRA = 308; // detail panel (300) + gap (8); body.expanded is 600px
@@ -14,7 +16,6 @@ if (!app.requestSingleInstanceLock()) {
   process.exit(0);
 }
 
-nativeTheme.themeSource = 'dark';
 // Must match build.appId so Windows notifications are attributed to the installed app.
 app.setAppUserModelId('com.when630.whenpc');
 
@@ -32,6 +33,9 @@ const defaults = {
   expanded: false,      // detail (process) panel open
   detailSide: 'left',   // which side of the tiles the panel opens on
   detailTab: 'cpu',
+  skin: 'poster',     // whenterminal skins/themes (src/themes.json)
+  theme: 'poster',
+  skinThemes: {},     // last theme picked per skin
 };
 let config = structuredClone(defaults);
 
@@ -42,6 +46,22 @@ function loadConfig() {
   } catch {
     config = structuredClone(defaults);
   }
+  normalizeTheme();
+}
+
+const themeMeta = (id) => THEMES.find((t) => t.id === id);
+
+// Keep skin/theme valid and consistent: the theme always belongs to the chosen skin.
+function normalizeTheme() {
+  if (!SKINS.some((s) => s.id === config.skin)) config.skin = defaults.skin;
+  if (themeMeta(config.theme)?.skin !== config.skin) {
+    const remembered = config.skinThemes?.[config.skin];
+    config.theme = themeMeta(remembered)?.skin === config.skin ? remembered : THEMES.find((t) => t.skin === config.skin).id;
+  }
+  config.skinThemes = { ...config.skinThemes, [config.skin]: config.theme };
+  const t = themeMeta(config.theme);
+  nativeTheme.themeSource = t.dark ? 'dark' : 'light';
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.setBackgroundColor(t.colors[0]);
 }
 
 let saveTimer = null;
@@ -58,7 +78,7 @@ function saveConfig() {
 }
 
 function publicConfig() {
-  return { ...config, openAtLogin: app.getLoginItemSettings().openAtLogin };
+  return { ...config, themeDark: !!themeMeta(config.theme)?.dark, openAtLogin: app.getLoginItemSettings().openAtLogin };
 }
 
 function broadcastConfig() {
@@ -71,6 +91,10 @@ function applyConfig(patch) {
   const prev = config;
   config = { ...config, ...patch, items: { ...config.items, ...(patch.items || {}) } };
   delete config.openAtLogin;
+  delete config.themeDark;
+  // Switching skin restores that skin's last theme (normalizeTheme picks it when the theme no longer fits).
+  if ('skin' in patch && !('theme' in patch)) config.theme = null;
+  normalizeTheme();
 
   if ('openAtLogin' in patch) {
     app.setLoginItemSettings({
@@ -182,11 +206,11 @@ function openSettings() {
     minWidth: 380,
     minHeight: 480,
     title: 'whenpc 설정',
-    icon: trayIcon(32),
+    icon: ICON_PATH,
     frame: false,
     maximizable: false,
     fullscreenable: false,
-    backgroundColor: '#101217',
+    backgroundColor: themeMeta(config.theme).colors[0],
     autoHideMenuBar: true,
     show: false,
     webPreferences,
@@ -206,6 +230,7 @@ function resetPosition() {
 
 // ---------- IPC ----------
 ipcMain.handle('config:get', () => publicConfig());
+ipcMain.handle('themes:get', () => ({ skins: SKINS, themes: THEMES }));
 ipcMain.on('config:set', (_e, patch) => {
   if (patch && typeof patch === 'object') applyConfig(patch);
 });
@@ -224,22 +249,15 @@ ipcMain.on('widget:resize', (e, height) => {
 });
 
 // ---------- tray ----------
-function trayIcon(size = 16) {
-  // BGRA bitmap: rounded teal square with three white bars, drawn on a 16-unit grid.
-  const buf = Buffer.alloc(size * size * 4);
-  const u = size / 16;
-  const bars = [[4, 9], [7, 5], [10, 7]]; // [x, topY]
-  for (let py = 0; py < size; py++) {
-    for (let px = 0; px < size; px++) {
-      const x = px / u, y = py / u;
-      const i = (py * size + px) * 4;
-      if ((x < 2 || x >= 14) && (y < 2 || y >= 14)) continue;
-      let [b, g, r] = [168, 160, 20];
-      if (bars.some(([bx, top]) => x >= bx && x < bx + 2 && y >= top && y < 13)) [b, g, r] = [255, 255, 255];
-      buf[i] = b; buf[i + 1] = g; buf[i + 2] = r; buf[i + 3] = 255;
-    }
+function trayIcon() {
+  // Same artwork as the app icon (build/icons/bars.svg → src/assets/icon.png), with sharp sizes for each DPI.
+  const src = nativeImage.createFromPath(ICON_PATH);
+  const img = nativeImage.createEmpty();
+  for (const scaleFactor of [1, 1.25, 1.5, 2]) {
+    const px = Math.round(16 * scaleFactor);
+    img.addRepresentation({ scaleFactor, width: px, height: px, buffer: src.resize({ width: px, height: px, quality: 'best' }).toPNG() });
   }
-  return nativeImage.createFromBitmap(buf, { width: size, height: size });
+  return img;
 }
 
 function buildMenu() {
@@ -350,7 +368,7 @@ app.whenReady().then(() => {
       const out = process.env.WHENPC_SNAPSHOT;
       console.log('body class:', await win.webContents.executeJavaScript('document.body.className'), 'bounds:', JSON.stringify(win.getBounds()));
       fs.writeFileSync(out, (await win.webContents.capturePage()).toPNG());
-      if (settingsWin) await settingsWin.webContents.executeJavaScript(`document.querySelector('main').scrollTop = 1e6`);
+      if (settingsWin && process.env.WHENPC_SNAPSHOT_SCROLL) await settingsWin.webContents.executeJavaScript(`document.querySelector('main').scrollTop = 1e6`);
       if (settingsWin) fs.writeFileSync(out.replace(/\.png$/i, '-settings.png'), (await settingsWin.webContents.capturePage()).toPNG());
       app.quit();
     }, Number(process.env.WHENPC_SNAPSHOT_DELAY || 8000));

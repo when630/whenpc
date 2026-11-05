@@ -1,6 +1,20 @@
 const HISTORY = 60;
 const $ = (sel, root = document) => root.querySelector(sel);
 const css = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// Theme colors may be hex, rgb() or named; normalize through canvas to apply an alpha.
+const colorCtx = document.createElement('canvas').getContext('2d');
+function withAlpha(color, a) {
+  colorCtx.fillStyle = '#000';
+  colorCtx.fillStyle = color;
+  const c = colorCtx.fillStyle; // '#rrggbb' or 'rgba(r, g, b, a)'
+  if (c.startsWith('#')) {
+    const n = parseInt(c.slice(1), 16);
+    return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+  }
+  const [r, g, b, a0 = 1] = c.match(/[\d.]+/g).map(Number);
+  return `rgba(${r}, ${g}, ${b}, ${a * a0})`;
+}
 const el = (tag, cls, text) => {
   const e = document.createElement(tag);
   if (cls) e.className = cls;
@@ -78,8 +92,8 @@ class Spark {
       ctx.lineTo(first * step, h);
       ctx.closePath();
       const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, `${color}${si === 0 ? '50' : '30'}`);
-      g.addColorStop(1, `${color}00`);
+      g.addColorStop(0, withAlpha(color, si === 0 ? 0.32 : 0.2));
+      g.addColorStop(1, withAlpha(color, 0));
       ctx.fillStyle = g;
       ctx.fill();
     });
@@ -222,6 +236,10 @@ function render(m) {
   t.spark.push(m.net.rx, m.net.tx);
   t.subs[0].replaceChildren(...dots([`↓ ${rate(m.net.rx)}`, '--net'], [`↑ ${rate(m.net.tx)}`, '--net2']));
 
+  // IDE skin status bar
+  $('#sb-left').textContent = `CPU ${Math.round(m.cpu.util)}%  ·  MEM ${Math.round(memP)}%  ·  GPU ${Math.round(m.gpu.util)}%`;
+  $('#sb-right').textContent = m.sys ? `가동 ${uptimeText(m.sys.uptime)}` : '';
+
   // Temperature
   t = tiles.temp;
   const temp = m.temp;
@@ -248,6 +266,10 @@ let scale = 1;
 
 function applyConfig(c) {
   scale = c.scale / 100;
+  const html = document.documentElement;
+  html.dataset.skin = c.skin;
+  html.dataset.theme = c.theme;
+  html.toggleAttribute('data-dark', !!c.themeDark);
   const root = document.documentElement.style;
   root.setProperty('--solid', String(1 - c.transparency / 100));
   root.setProperty('--scale', String(scale));

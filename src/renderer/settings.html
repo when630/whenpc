@@ -2,8 +2,18 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data:">
   <title>whenpc 설정</title>
+  <link rel="stylesheet" href="../../node_modules/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/archivo/900.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/black-han-sans/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/geist-mono/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/geist-mono/500.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/noto-serif-kr/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/gaegu/400.css">
+  <link rel="stylesheet" href="../../node_modules/@fontsource/gaegu/700.css">
+  <link rel="stylesheet" href="themes.css">
+  <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="settings.css">
 </head>
 <body>
@@ -17,6 +27,16 @@
     </button>
   </header>
   <main>
+
+    <section>
+      <h2>스킨</h2>
+      <div class="skins" id="skins" role="radiogroup" aria-label="스킨"></div>
+    </section>
+
+    <section>
+      <h2>테마</h2>
+      <div class="themes" id="themes" role="radiogroup" aria-label="테마"></div>
+    </section>
 
     <section>
       <h2>표시 항목</h2>
