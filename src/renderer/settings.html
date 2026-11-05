@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <title>whenpc 설정</title>
+  <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+  <header class="titlebar">
+    <div>
+      <h1>설정</h1>
+      <p class="lead">바꾸는 즉시 위젯에 반영됩니다.</p>
+    </div>
+    <button id="close" type="button" title="닫기" aria-label="닫기">
+      <svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3.5 3.5l9 9m0-9-9 9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+    </button>
+  </header>
+  <main>
+
+    <section>
+      <h2>표시 항목</h2>
+      <div class="group" id="items"></div>
+    </section>
+
+    <section>
+      <h2>모양</h2>
+      <div class="group">
+        <div class="field">
+          <div class="field-head">
+            <label for="transparency">배경 투명도</label>
+            <output id="transparency-out"></output>
+          </div>
+          <input type="range" id="transparency" min="0" max="100" step="5">
+          <div class="scale-hints"><span>불투명</span><span>완전 투명</span></div>
+        </div>
+        <div class="field">
+          <div class="field-head">
+            <label for="scale">크기</label>
+            <output id="scale-out"></output>
+          </div>
+          <input type="range" id="scale" min="80" max="150" step="5">
+          <div class="scale-hints"><span>작게</span><span>크게</span></div>
+        </div>
+        <label class="row">
+          <span class="row-text">그래프 표시<small>항목마다 최근 60초 추이를 그립니다</small></span>
+          <input type="checkbox" class="switch" id="showGraphs">
+        </label>
+      </div>
+    </section>
+
+    <section>
+      <h2>동작</h2>
+      <div class="group">
+        <label class="row">
+          <span class="row-text">항상 위에 표시<small>다른 창보다 위에 띄웁니다</small></span>
+          <input type="checkbox" class="switch" id="alwaysOnTop">
+        </label>
+        <label class="row">
+          <span class="row-text">위치 고정 (클릭 통과)<small>위젯이 클릭을 받지 않습니다. 해제는 트레이 아이콘 메뉴에서도 할 수 있습니다</small></span>
+          <input type="checkbox" class="switch" id="locked">
+        </label>
+        <label class="row">
+          <span class="row-text">Windows 시작 시 실행</span>
+          <input type="checkbox" class="switch" id="openAtLogin">
+        </label>
+        <div class="row">
+          <span class="row-text">위젯 위치<small>주 모니터 오른쪽 위로 되돌립니다</small></span>
+          <button id="resetPosition" type="button">초기화</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script src="settings.js"></script>
+</body>
+</html>

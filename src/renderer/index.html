@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'">
+  <title>whenpc</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="card">
+    <header>
+      <div id="clock">
+        <div id="time">--:--</div>
+        <div id="date"></div>
+      </div>
+      <span id="brand">whenpc</span>
+      <button id="expand" class="hbtn" title="상세 보기" aria-label="상세 보기" aria-pressed="false">
+        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><rect x="3.5" y="4.5" width="17" height="15" rx="2.5"/><path d="M3.5 9h17"/></g></svg>
+      </button>
+      <button id="settings" class="hbtn" title="설정" aria-label="설정">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1Z"/></svg>
+      </button>
+    </header>
+    <div id="tiles"></div>
+    <div id="error" hidden></div>
+    <div id="empty" hidden>표시할 항목이 없습니다 · 설정에서 켜 주세요</div>
+  </main>
+
+  <aside id="detail" class="panel" hidden>
+    <div class="dhead">
+      <span class="dtitle">상세</span>
+      <span id="sysinfo"></span>
+    </div>
+    <div class="tabs" role="tablist">
+      <button data-tab="cpu" role="tab">CPU</button>
+      <button data-tab="mem" role="tab">메모리</button>
+      <button data-tab="gpu" role="tab">GPU</button>
+      <button data-tab="io" role="tab" title="프로세스 I/O">디스크</button>
+    </div>
+    <div id="dsummary"></div>
+    <ol id="plist"><li class="loading">프로세스 정보를 모으는 중…</li></ol>
+    <div id="dnote"></div>
+  </aside>
+  <script src="renderer.js"></script>
+</body>
+</html>

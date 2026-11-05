@@ -1,0 +1,13 @@
+{
+  "name": "whenpc",
+  "version": "0.1.0",
+  "description": "Windows desktop widget for CPU / memory / GPU / disk / network / temperature usage",
+  "main": "src/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "45.2.3"
+  }
+}
