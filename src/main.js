@@ -6,7 +6,14 @@ const readline = require('node:readline');
 const { readLhmTemps } = require('./lhm');
 const updater = require('./updater');
 const { skins: SKINS, themes: THEMES } = require('./themes.json');
-const ICON_PATH = path.join(__dirname, 'assets', 'icon.png');
+// App icons (build/icons/*.svg → scripts/render-icons.cjs → src/assets/icons/<id>.png).
+// The installer/shortcut icon is fixed at build time (build/icon.png); this choice changes tray and window icons.
+const APP_ICONS = [
+  { id: 'bars', name: 'BARS', note: '사용량 막대, 작은 크기에서 가장 또렷함' },
+  { id: 'gauge', name: 'GAUGE', note: '원형 게이지' },
+  { id: 'wordmark', name: 'PC_', note: 'whenterminal의 WT_와 짝' },
+];
+const iconPath = () => path.join(__dirname, 'assets', 'icons', `${config.appIcon}.png`);
 
 const BASE_WIDTH = 292;   // must match body width in renderer/style.css
 const DETAIL_EXTRA = 308; // detail panel (300) + gap (8); body.expanded is 600px
@@ -36,6 +43,7 @@ const defaults = {
   skin: 'poster',     // whenterminal skins/themes (src/themes.json)
   theme: 'poster',
   skinThemes: {},     // last theme picked per skin
+  appIcon: 'bars',
 };
 let config = structuredClone(defaults);
 
@@ -47,6 +55,7 @@ function loadConfig() {
     config = structuredClone(defaults);
   }
   normalizeTheme();
+  if (!APP_ICONS.some((i) => i.id === config.appIcon)) config.appIcon = defaults.appIcon;
 }
 
 const themeMeta = (id) => THEMES.find((t) => t.id === id);
@@ -95,6 +104,10 @@ function applyConfig(patch) {
   // Switching skin restores that skin's last theme (normalizeTheme picks it when the theme no longer fits).
   if ('skin' in patch && !('theme' in patch)) config.theme = null;
   normalizeTheme();
+  if ('appIcon' in patch) {
+    if (!APP_ICONS.some((i) => i.id === config.appIcon)) config.appIcon = defaults.appIcon;
+    applyAppIcon();
+  }
 
   if ('openAtLogin' in patch) {
     app.setLoginItemSettings({
@@ -177,6 +190,7 @@ function createWindow() {
     hasShadow: false,
     show: false,
     alwaysOnTop: config.alwaysOnTop,
+    icon: iconPath(),
     webPreferences,
   });
   win.setIgnoreMouseEvents(config.locked);
@@ -206,7 +220,7 @@ function openSettings() {
     minWidth: 380,
     minHeight: 480,
     title: 'whenpc 설정',
-    icon: ICON_PATH,
+    icon: iconPath(),
     frame: false,
     maximizable: false,
     fullscreenable: false,
@@ -230,7 +244,7 @@ function resetPosition() {
 
 // ---------- IPC ----------
 ipcMain.handle('config:get', () => publicConfig());
-ipcMain.handle('themes:get', () => ({ skins: SKINS, themes: THEMES }));
+ipcMain.handle('themes:get', () => ({ skins: SKINS, themes: THEMES, icons: APP_ICONS }));
 ipcMain.on('config:set', (_e, patch) => {
   if (patch && typeof patch === 'object') applyConfig(patch);
 });
@@ -249,9 +263,17 @@ ipcMain.on('widget:resize', (e, height) => {
 });
 
 // ---------- tray ----------
+// Swap tray and window icons in place.
+function applyAppIcon() {
+  const img = nativeImage.createFromPath(iconPath());
+  if (img.isEmpty()) return;
+  for (const w of [win, settingsWin]) if (w && !w.isDestroyed()) w.setIcon(img);
+  tray?.setImage(trayIcon());
+}
+
 function trayIcon() {
   // Same artwork as the app icon (build/icons/bars.svg → src/assets/icon.png), with sharp sizes for each DPI.
-  const src = nativeImage.createFromPath(ICON_PATH);
+  const src = nativeImage.createFromPath(iconPath());
   const img = nativeImage.createEmpty();
   for (const scaleFactor of [1, 1.25, 1.5, 2]) {
     const px = Math.round(16 * scaleFactor);
@@ -368,7 +390,14 @@ app.whenReady().then(() => {
       const out = process.env.WHENPC_SNAPSHOT;
       console.log('body class:', await win.webContents.executeJavaScript('document.body.className'), 'bounds:', JSON.stringify(win.getBounds()));
       fs.writeFileSync(out, (await win.webContents.capturePage()).toPNG());
-      if (settingsWin && process.env.WHENPC_SNAPSHOT_SCROLL) await settingsWin.webContents.executeJavaScript(`document.querySelector('main').scrollTop = 1e6`);
+      if (settingsWin && process.env.WHENPC_SNAPSHOT_SCROLL) {
+        // '1' scrolls to the bottom; anything else is a CSS selector to scroll into view.
+        const target = process.env.WHENPC_SNAPSHOT_SCROLL;
+        await settingsWin.webContents.executeJavaScript(target === '1'
+          ? `document.querySelector('main').scrollTop = 1e6`
+          : `(() => { const m = document.querySelector('main'), el = document.querySelector(${JSON.stringify(target)}); if (el) m.scrollTop = el.getBoundingClientRect().top - m.getBoundingClientRect().top + m.scrollTop - 120; })()`);
+        await new Promise((r) => setTimeout(r, 300));
+      }
       if (settingsWin) fs.writeFileSync(out.replace(/\.png$/i, '-settings.png'), (await settingsWin.webContents.capturePage()).toPNG());
       app.quit();
     }, Number(process.env.WHENPC_SNAPSHOT_DELAY || 8000));

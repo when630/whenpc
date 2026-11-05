@@ -38,10 +38,10 @@ whenterminal과 같은 스킨 7개(POSTER · SOFT · TUI · ZEN · GLASS · IDE 
 
 ## 아이콘
 
-whenterminal 앱 아이콘과 같은 계열(검정·흰색에 신호색 빨강 하나, 둥근 정사각형 타일)이다. 원본은 `build/icons/*.svg`이고 기본은 `bars`다.
+whenterminal 앱 아이콘과 같은 계열(검정·흰색에 신호색 빨강 하나, 둥근 정사각형 타일)이다. 원본은 `build/icons/*.svg`이고 기본은 `bars`다. 설정 창의 "앱 아이콘"에서 BARS · GAUGE · PC_ 중에 고르면 트레이와 창 아이콘이 바로 바뀐다. 설치 파일과 바로가기 아이콘은 빌드 때 정해지므로 BARS로 고정이다.
 
 ```sh
-npx electron scripts/render-icons.cjs   # SVG → PNG, 미리보기 build/icons/preview.png, build/icon.png와 src/assets/icon.png 갱신
+npx electron scripts/render-icons.cjs   # SVG → PNG, 미리보기 build/icons/preview.png, src/assets/icons/*.png와 build/icon.png 갱신
 ```
 
 ## 온도

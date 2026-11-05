@@ -191,3 +191,20 @@ button {
 }
 button:hover { border-color: var(--muted); }
 button.primary { background: var(--ac); color: var(--on-ac); font-weight: 600; border-color: transparent; }
+
+/* ---------- app icon picker ---------- */
+.icons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.icon-card {
+  font: inherit; color: var(--text); cursor: pointer; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 12px 8px 10px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--r-tile);
+}
+.icon-card img { width: 52px; height: 52px; margin-bottom: 4px; }
+.icon-card b { font-family: 'WT Display', 'Archivo', var(--font); font-weight: 400; font-size: 13px; letter-spacing: 0.02em; }
+.icon-card span { color: var(--muted); font-size: 10.5px; line-height: 1.35; }
+.icon-card:hover { border-color: var(--muted); }
+.icon-card[aria-checked="true"] { border-color: var(--ac); box-shadow: inset 0 0 0 1px var(--ac); }
+.hint { color: var(--muted); font-size: 11px; margin: 8px 4px 0; }

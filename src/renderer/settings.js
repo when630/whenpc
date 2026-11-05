@@ -123,6 +123,26 @@ function renderThemes(c) {
   }));
 }
 
+function renderIcons(c) {
+  $('icons').replaceChildren(...(catalog.icons || []).map((ic) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'icon-card';
+    b.title = ic.note;
+    radio(b, ic.id === c.appIcon);
+    const img = document.createElement('img');
+    img.src = `../assets/icons/${ic.id}.png`;
+    img.alt = '';
+    const name = document.createElement('b');
+    name.textContent = ic.name;
+    const note = document.createElement('span');
+    note.textContent = ic.note;
+    b.append(img, name, note);
+    b.addEventListener('click', () => set({ appIcon: ic.id }));
+    return b;
+  }));
+}
+
 // ---------- sync ----------
 function render(c) {
   config = c;
@@ -132,6 +152,7 @@ function render(c) {
   html.toggleAttribute('data-dark', !!c.themeDark);
   renderSkins(c);
   renderThemes(c);
+  renderIcons(c);
   for (const [k, { input, row, parent }] of Object.entries(itemInputs)) {
     input.checked = !!c.items[k];
     row.classList.toggle('disabled', !!parent && !c.items[parent]);

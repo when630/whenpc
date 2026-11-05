@@ -4,7 +4,8 @@
 //
 //   npx electron scripts/render-icons.cjs
 //
-// The default icon (bars) is also copied to build/icon.png (installer) and src/assets/icon.png (tray, windows).
+// Every icon is copied to src/assets/icons/<name>.png (selectable in settings: tray and window icons);
+// the default (bars) also becomes build/icon.png (installer, shortcuts).
 const { app, BrowserWindow } = require('electron');
 const { readFileSync, readdirSync, writeFileSync, mkdirSync, copyFileSync } = require('node:fs');
 const { join, basename } = require('node:path');
@@ -34,9 +35,9 @@ app.whenReady().then(async () => {
     console.log('rendered', name);
   }
 
-  mkdirSync(join(root, 'src/assets'), { recursive: true });
+  mkdirSync(join(root, 'src/assets/icons'), { recursive: true });
+  for (const name of names) copyFileSync(join(dir, `${name}.png`), join(root, 'src/assets/icons', `${name}.png`));
   copyFileSync(join(dir, `${DEFAULT_ICON}.png`), join(root, 'build/icon.png'));
-  copyFileSync(join(dir, `${DEFAULT_ICON}.png`), join(root, 'src/assets/icon.png'));
 
   // Preview: large on white, small sizes, and a dark taskbar strip.
   const src = (n) => pathToFileURL(join(dir, `${n}.png`)).href;
