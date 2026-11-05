@@ -18,13 +18,26 @@ const iconPath = () => path.join(__dirname, 'assets', 'icons', `${config.appIcon
 const BASE_WIDTH = 292;   // must match body width in renderer/style.css
 const DETAIL_EXTRA = 308; // detail panel (300) + gap (8); body.expanded is 600px
 
+// Dev runs (npm start) get their own settings folder and app id. Sharing them with the installed app
+// made the two fight over the single-instance lock (launching the installed app just focused the dev
+// one) and over the same "run at login" registry value.
+if (!app.isPackaged) app.setPath('userData', `${app.getPath('userData')}-dev`);
+
 if (!app.requestSingleInstanceLock()) {
   app.quit();
   process.exit(0);
 }
 
 // Must match build.appId so Windows notifications are attributed to the installed app.
-app.setAppUserModelId('com.when630.whenpc');
+// It is also the registry value name used for "run at login".
+app.setAppUserModelId(app.isPackaged ? 'com.when630.whenpc' : 'com.when630.whenpc.dev');
+
+// setLoginItemSettings and getLoginItemSettings must get the same path/args on Windows, or
+// getLoginItemSettings reports openAtLogin: false even though the entry exists.
+const loginItemOptions = () => ({
+  path: process.execPath,
+  args: app.isPackaged ? [] : [path.resolve(__dirname, '..')],
+});
 
 // ---------- settings ----------
 const configPath = () => path.join(app.getPath('userData'), 'config.json');
@@ -87,7 +100,7 @@ function saveConfig() {
 }
 
 function publicConfig() {
-  return { ...config, themeDark: !!themeMeta(config.theme)?.dark, openAtLogin: app.getLoginItemSettings().openAtLogin };
+  return { ...config, themeDark: !!themeMeta(config.theme)?.dark, openAtLogin: app.getLoginItemSettings(loginItemOptions()).openAtLogin };
 }
 
 function broadcastConfig() {
@@ -110,11 +123,7 @@ function applyConfig(patch) {
   }
 
   if ('openAtLogin' in patch) {
-    app.setLoginItemSettings({
-      openAtLogin: !!patch.openAtLogin,
-      path: process.execPath,
-      args: app.isPackaged ? [] : [path.resolve(__dirname, '..')],
-    });
+    app.setLoginItemSettings({ ...loginItemOptions(), openAtLogin: !!patch.openAtLogin });
   }
   if (win) {
     if (prev.alwaysOnTop !== config.alwaysOnTop) win.setAlwaysOnTop(config.alwaysOnTop);
