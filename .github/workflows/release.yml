@@ -15,6 +15,8 @@ permissions:
 jobs:
   windows:
     runs-on: windows-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -27,6 +29,22 @@ jobs:
         run: |
           v="v$(node -p "require('./package.json').version")"
           [ "$v" = "${GITHUB_REF_NAME}" ] || { echo "tag ${GITHUB_REF_NAME} != package.json $v"; exit 1; }
+
+      # electron-builder uploads the installer, .blockmap and latest.yml in parallel. If no release
+      # exists yet, each upload creates its own release (duplicates). Creating a draft first makes
+      # every upload land in the same release, and keeps updaters from seeing a half-uploaded one.
+      - name: Create draft release
+        shell: bash
+        run: gh release create "$GITHUB_REF_NAME" --draft --verify-tag --title "$GITHUB_REF_NAME" --generate-notes
+
       - run: npm run release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify assets and publish release
+        shell: bash
+        run: |
+          assets=$(gh release view "$GITHUB_REF_NAME" --json assets --jq '.assets[].name')
+          echo "$assets"
+          for f in latest.yml "whenpc-Setup-${GITHUB_REF_NAME#v}.exe" "whenpc-Setup-${GITHUB_REF_NAME#v}.exe.blockmap"; do
+            grep -qxF "$f" <<<"$assets" || { echo "missing asset: $f"; exit 1; }
+          done
+          gh release edit "$GITHUB_REF_NAME" --draft=false --latest
