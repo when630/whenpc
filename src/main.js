@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, screen, powerMonitor } = require('electron');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -126,7 +126,7 @@ function applyConfig(patch) {
     app.setLoginItemSettings({ ...loginItemOptions(), openAtLogin: !!patch.openAtLogin });
   }
   if (win) {
-    if (prev.alwaysOnTop !== config.alwaysOnTop) win.setAlwaysOnTop(config.alwaysOnTop);
+    if (prev.alwaysOnTop !== config.alwaysOnTop) applyTopmost();
     if (prev.locked !== config.locked) win.setIgnoreMouseEvents(config.locked);
     if (prev.scale !== config.scale) {
       const [x, y] = win.getPosition();
@@ -198,13 +198,13 @@ function createWindow() {
     skipTaskbar: true,
     hasShadow: false,
     show: false,
-    alwaysOnTop: config.alwaysOnTop,
     icon: iconPath(),
     webPreferences,
   });
+  applyTopmost();
   win.setIgnoreMouseEvents(config.locked);
   win.loadFile(path.join(__dirname, 'renderer', 'index.html'));
-  win.once('ready-to-show', () => win.showInactive());
+  win.once('ready-to-show', () => showWidget());
 
   win.on('moved', () => {
     const [nx, ny] = win.getPosition();
@@ -215,6 +215,62 @@ function createWindow() {
   win.on('show', () => { refreshMenu(); syncCollectorDetail(); });
   win.on('hide', () => { refreshMenu(); syncCollectorDetail(); });
   win.on('closed', () => { win = null; });
+}
+
+// ---------- keeping the widget up ----------
+// 'floating' (the default level) sits below the taskbar on Windows, so clicking the taskbar or Start
+// buried the widget. 'screen-saver' is above it.
+const TOP_LEVEL = 'screen-saver';
+let userHidden = false; // hidden on purpose from the tray; otherwise the widget should always be showing
+
+function applyTopmost() {
+  if (!win || win.isDestroyed()) return;
+  if (config.alwaysOnTop) {
+    win.setAlwaysOnTop(true, TOP_LEVEL);
+    win.moveTop();
+  } else {
+    win.setAlwaysOnTop(false);
+  }
+}
+
+function showWidget() {
+  userHidden = false;
+  if (!win) return;
+  if (win.isMinimized()) win.restore();
+  win.showInactive();
+  applyTopmost();
+}
+
+function hideWidget() {
+  userHidden = true;
+  win?.hide();
+}
+
+// Show desktop (Win+D), sleep/lock, other topmost apps and display changes can minimize or hide the
+// widget or drop its topmost state. Check periodically and put it back.
+function guardWidget() {
+  if (!win || win.isDestroyed() || userHidden) return;
+  if (win.isMinimized()) win.restore();
+  if (!win.isVisible()) win.showInactive();
+  if (config.alwaysOnTop && !win.isAlwaysOnTop()) applyTopmost();
+}
+
+// Bring the widget back if a display change left it off every screen.
+function keepOnScreen() {
+  if (!win || win.isDestroyed()) return;
+  const b = win.getBounds();
+  const visible = screen.getAllDisplays().some(({ workArea: a }) =>
+    b.x < a.x + a.width - 40 && b.x + b.width > a.x + 40 && b.y < a.y + a.height - 40 && b.y + 20 > a.y);
+  if (!visible) resetPosition();
+  applyTopmost();
+}
+
+function watchWidget() {
+  setInterval(guardWidget, 2000);
+  win.on('minimize', () => { if (!userHidden) setImmediate(() => win?.restore()); });
+  win.on('always-on-top-changed', (_e, on) => { if (config.alwaysOnTop && !on) setImmediate(applyTopmost); });
+  for (const ev of ['resume', 'unlock-screen']) powerMonitor.on(ev, () => setTimeout(() => { guardWidget(); applyTopmost(); }, 1000));
+  for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(keepOnScreen, 500));
 }
 
 function openSettings() {
@@ -293,7 +349,7 @@ function trayIcon() {
 
 function buildMenu() {
   return Menu.buildFromTemplate([
-    { label: '위젯 보이기', type: 'checkbox', checked: !!win?.isVisible(), click: (i) => (i.checked ? win?.showInactive() : win?.hide()) },
+    { label: '위젯 보이기', type: 'checkbox', checked: !!win?.isVisible(), click: (i) => (i.checked ? showWidget() : hideWidget()) },
     { label: '위치 고정 (클릭 통과)', type: 'checkbox', checked: config.locked, click: (i) => applyConfig({ locked: i.checked }) },
     { label: '설정…', click: openSettings },
     ...(updater.getState().status === 'downloaded'
@@ -314,7 +370,7 @@ function createTray() {
   refreshMenu();
   tray.on('click', () => {
     if (!win) return;
-    if (win.isVisible()) win.hide(); else win.showInactive();
+    if (win.isVisible()) hideWidget(); else showWidget();
   });
   tray.on('double-click', openSettings);
 }
@@ -379,11 +435,12 @@ async function pollLhm() {
 }
 
 // ---------- lifecycle ----------
-app.on('second-instance', () => { win?.showInactive(); openSettings(); });
+app.on('second-instance', () => { showWidget(); openSettings(); });
 
 app.whenReady().then(() => {
   loadConfig();
   createWindow();
+  watchWidget();
   createTray();
   startCollector();
   pollLhm();
