@@ -32,9 +32,10 @@ GPU 사용률은 작업 관리자와 같은 방식으로 계산한다. 엔진별
 
 ## 스킨과 테마
 
-whenterminal과 같은 스킨 7개(POSTER · SOFT · TUI · ZEN · GLASS · IDE · SKETCH)와 테마 34개를 설정 창에서 고른다. 스킨은 모양(선, 모서리, 글꼴, 배치)을, 테마는 색을 정한다. 테마는 스킨마다 따로 있고, 스킨을 바꾸면 그 스킨에서 마지막으로 고른 테마로 돌아간다. 위젯, 상세 패널, 설정 창에 모두 적용된다.
+whenterminal과 같은 스킨 7개(POSTER · SOFT · TUI · ZEN · GLASS · IDE · SKETCH)와 테마 35개(whenterminal 34개 + whenpc 전용 NOIR)를 설정 창에서 고른다. 스킨은 모양(선, 모서리, 글꼴, 배치)을, 테마는 색을 정한다. 테마는 스킨마다 따로 있고, 스킨을 바꾸면 그 스킨에서 마지막으로 고른 테마로 돌아간다. 위젯, 상세 패널, 설정 창에 모두 적용된다.
 
 - 색 토큰(`src/renderer/themes.css`)과 스킨·테마 목록(`src/themes.json`)은 whenterminal에서 생성한다. 손으로 고치지 말고, whenterminal이 바뀌면 `node scripts/import-whenterminal-themes.mjs [whenterminal 경로]`로 다시 가져온다(기본 경로 `../whenterminal`).
+- whenpc에만 있는 테마는 `src/themes-extra.json`(목록)과 `src/renderer/themes-extra.css`(색 토큰)에 둔다. 가져오기 스크립트가 건드리지 않고, 각 스킨의 기존 테마 뒤에 붙는다.
 - 스킨 모양은 whenpc 화면에 맞게 다시 구현했다(`src/renderer/ui.css`, `style.css`, `settings.css`의 `data-skin` 규칙).
 - 글꼴은 whenterminal과 같은 패키지를 쓴다: Pretendard, Archivo, Black Han Sans, Geist Mono, Noto Serif KR, Gaegu. 설치 파일에는 실제로 쓰는 굵기의 woff2만 넣는다(`package.json`의 `build.files`).
 

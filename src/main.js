@@ -6,7 +6,10 @@ const readline = require('node:readline');
 const { readLhmTemps } = require('./lhm');
 const updater = require('./updater');
 const { DeckBridge } = require('./deck');
-const { skins: SKINS, themes: THEMES } = require('./themes.json');
+const { skins: SKINS, themes: GENERATED_THEMES } = require('./themes.json');
+// whenpc-only themes are appended after each skin's generated ones (themes.json is regenerated from whenterminal).
+const EXTRA_THEMES = require('./themes-extra.json').themes;
+const THEMES = SKINS.flatMap((s) => [...GENERATED_THEMES, ...EXTRA_THEMES].filter((t) => t.skin === s.id));
 // App icons (build/icons/*.svg → scripts/render-icons.cjs → src/assets/icons/<id>.png).
 // The installer/shortcut icon is fixed at build time (build/icon.png); this choice changes tray and window icons.
 const APP_ICONS = [

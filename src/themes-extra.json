@@ -1,0 +1,12 @@
+{
+  "themes": [
+    {
+      "id": "noir",
+      "skin": "poster",
+      "name": "NOIR",
+      "note": "검정 바탕에 흰 글자와 빨강, POSTER를 뒤집은 것",
+      "colors": ["#0a0a0a", "#ffffff", "#ff2a12"],
+      "dark": true
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+/* whenpc-only themes (src/themes-extra.json). Kept apart from the generated themes.css so
+   scripts/import-whenterminal-themes.mjs doesn't overwrite them. */
+
+/* noir — poster inverted: black paper, white ink, the same red */
+:root[data-theme='noir'] {
+  --paper: #0a0a0a; --ink: #ffffff; --signal: #ff2a12; --signal-ink: #ff6a55; --on-signal: #ffffff;
+  --wash: #171717; --wash-2: #242424; --gray: #a3a3a3; --gray-2: #6b6b6b; --gray-3: #3a3a3a;
+  --sel-bg: var(--ink); --sel-fg: var(--paper); --line: var(--ink); --code-bg: #000000; --code-fg: #ffffff;
+  --syn-keyword: #c3a6f0; --syn-string: #8fd19e; --syn-number: #f0bd7a; --syn-comment: #7a7a7a;
+  --syn-type: #82b8f0; --syn-fn: #ffffff; --syn-attr: #e0b88a;
+  --diff-add-fg: #8ee6a6; --diff-add-bg: rgba(46, 160, 67, 0.22); --diff-add-ink: #8ee6a6;
+  --diff-del-fg: #ffa198; --diff-del-bg: rgba(255, 42, 18, 0.22); --diff-del-ink: #ff6a55;
+  --shadow: rgba(0, 0, 0, 0.5); color-scheme: dark;
+}
