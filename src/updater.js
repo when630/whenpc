@@ -3,14 +3,20 @@ const { app, Notification } = require('electron');
 
 const CHECK_DELAY_MS = 10_000;
 const CHECK_INTERVAL_MS = 4 * 60 * 60 * 1000;
+const RETRY_AFTER_SERVER_ERROR_MS = 10 * 60 * 1000;
 
 const state = { status: app.isPackaged ? 'idle' : 'dev', version: null, percent: 0, error: null };
 let onChange = () => {};
 let autoUpdater = null;
 
+// electron-updater's HttpError carries statusCode; its message is just "504 Gateway Time-out" plus headers.
+const httpStatus = (e) => (Number.isInteger(e?.statusCode) ? e.statusCode : null);
+const isServerError = (e) => httpStatus(e) >= 500 && httpStatus(e) <= 599;
+
 function friendlyError(e) {
   const msg = String(e?.message || e);
-  if (/Unable to find latest version|HttpError: 404|No published versions/i.test(msg)) return '아직 배포된 릴리스가 없습니다';
+  if (isServerError(e)) return `GitHub 응답 지연 (${httpStatus(e)}) · 10분 뒤 다시 확인합니다`;
+  if (httpStatus(e) === 404 || /Unable to find latest version|HttpError: 404|No published versions/i.test(msg)) return '아직 배포된 릴리스가 없습니다';
   if (/ENOTFOUND|ETIMEDOUT|ECONNREFUSED|net::ERR_/i.test(msg)) return '네트워크에 연결할 수 없습니다';
   return msg.split('\n')[0].slice(0, 160);
 }
@@ -24,10 +30,17 @@ function getState() {
   return { ...state, current: app.getVersion() };
 }
 
+// A GitHub outage shouldn't leave the app waiting 4 hours for the next try.
+let retryTimer = null;
+function fail(e) {
+  set({ status: 'error', error: friendlyError(e) });
+  if (isServerError(e) && !retryTimer) retryTimer = setTimeout(() => { retryTimer = null; check(); }, RETRY_AFTER_SERVER_ERROR_MS);
+}
+
 function check() {
   if (!autoUpdater) return;
   if (['checking', 'downloading', 'downloaded'].includes(state.status)) return;
-  autoUpdater.checkForUpdates().catch((e) => set({ status: 'error', error: friendlyError(e) }));
+  autoUpdater.checkForUpdates().catch(fail);
 }
 
 function install() {
@@ -60,7 +73,7 @@ function init(listener) {
       n.show();
     }
   });
-  autoUpdater.on('error', (e) => set({ status: 'error', error: friendlyError(e) }));
+  autoUpdater.on('error', fail);
 
   setTimeout(check, CHECK_DELAY_MS);
   setInterval(check, CHECK_INTERVAL_MS);
