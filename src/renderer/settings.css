@@ -192,6 +192,12 @@ button {
 button:hover { border-color: var(--muted); }
 button.primary { background: var(--ac); color: var(--on-ac); font-weight: 600; border-color: transparent; }
 
+/* ---------- shortcut recorder ---------- */
+.shortcut { display: flex; gap: 6px; flex-shrink: 0; }
+.kbd { font-family: 'Geist Mono', monospace; font-size: 12px; min-width: 96px; white-space: nowrap; }
+.kbd.recording { border-color: var(--ac); color: var(--ac); }
+#shortcutHint.warn { color: var(--temp); }
+
 /* ---------- app icon picker ---------- */
 .icons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .icon-card {

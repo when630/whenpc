@@ -74,6 +74,82 @@ for (const id of ['showGraphs', 'alwaysOnTop', 'locked', 'openAtLogin']) {
 $('close').addEventListener('click', () => window.close());
 $('resetPosition').addEventListener('click', () => window.widget.resetPosition());
 
+// ---------- hide/show shortcut ----------
+// KeyboardEvent.code → Electron accelerator key. Uses physical keys so the Korean IME (e.key 'Process')
+// and keyboard layout don't matter.
+const CODE_KEYS = {
+  Space: 'Space', Enter: 'Enter', Tab: 'Tab', Insert: 'Insert', Delete: 'Delete', Home: 'Home', End: 'End',
+  PageUp: 'PageUp', PageDown: 'PageDown', ArrowUp: 'Up', ArrowDown: 'Down', ArrowLeft: 'Left', ArrowRight: 'Right',
+  Backquote: '`', Minus: '-', Equal: '=', BracketLeft: '[', BracketRight: ']', Backslash: '\\',
+  Semicolon: ';', Quote: "'", Comma: ',', Period: '.', Slash: '/',
+  NumpadAdd: 'numadd', NumpadSubtract: 'numsub', NumpadMultiply: 'nummult', NumpadDivide: 'numdiv', NumpadDecimal: 'numdec',
+};
+function acceleratorKey(code) {
+  let m;
+  if ((m = /^Key([A-Z])$/.exec(code))) return m[1];
+  if ((m = /^Digit(\d)$/.exec(code))) return m[1];
+  if ((m = /^Numpad(\d)$/.exec(code))) return `num${m[1]}`;
+  if (/^F([1-9]|1\d|2[0-4])$/.test(code)) return code;
+  return CODE_KEYS[code] || null;
+}
+const prettyShortcut = (acc) => acc.replace(/^num/i, 'Num ').split('+').join(' + ');
+
+let recording = false;
+const shortcutBtn = $('shortcut');
+
+function renderShortcut(c) {
+  if (recording) return;
+  shortcutBtn.classList.remove('recording');
+  shortcutBtn.textContent = c.toggleShortcut ? prettyShortcut(c.toggleShortcut) : '없음';
+  $('shortcutClear').hidden = !c.toggleShortcut;
+  const hint = $('shortcutHint');
+  const taken = c.toggleShortcut && !c.shortcutOk;
+  hint.classList.toggle('warn', !!taken);
+  hint.textContent = taken
+    ? '다른 프로그램이 이미 쓰는 조합이라 등록하지 못했습니다. 다른 조합을 눌러 주세요'
+    : '어디서든 눌러 위젯을 내리고 다시 띄웁니다';
+}
+
+function stopRecording() {
+  if (!recording) return;
+  recording = false;
+  window.widget.pauseShortcut(false); // main re-registers and broadcasts the result
+  if (config) renderShortcut(config);
+}
+
+shortcutBtn.addEventListener('click', () => {
+  if (recording) return stopRecording();
+  recording = true;
+  window.widget.pauseShortcut(true);
+  shortcutBtn.classList.add('recording');
+  shortcutBtn.textContent = '키 입력…';
+  $('shortcutHint').classList.remove('warn');
+  $('shortcutHint').textContent = 'Ctrl · Alt · Shift와 함께 누르세요. Esc는 취소, Backspace는 끄기';
+});
+shortcutBtn.addEventListener('blur', stopRecording);
+shortcutBtn.addEventListener('keydown', (e) => {
+  if (!recording) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const mods = [e.ctrlKey && 'Ctrl', e.altKey && 'Alt', e.shiftKey && 'Shift', e.metaKey && 'Super'].filter(Boolean);
+  if (e.code === 'Escape' && !mods.length) return stopRecording();
+  if ((e.code === 'Backspace' || e.code === 'Delete') && !mods.length) {
+    set({ toggleShortcut: '' });
+    return stopRecording();
+  }
+  const key = acceleratorKey(e.code);
+  const live = mods.length ? `${mods.join(' + ')} + ${key ? prettyShortcut(key) : '…'}` : '키 입력…';
+  shortcutBtn.textContent = live;
+  if (!key) return; // only modifiers so far
+  // A bare key would fire while typing anywhere; F-keys are fine alone.
+  if (!mods.length && !/^F\d+$/.test(key)) return;
+  // Shift alone with a printable key is just typing a capital letter or symbol.
+  if (mods.length === 1 && mods[0] === 'Shift' && !/^F\d+$/.test(key)) return;
+  set({ toggleShortcut: [...mods, key].join('+') });
+  stopRecording();
+});
+$('shortcutClear').addEventListener('click', () => set({ toggleShortcut: '' }));
+
 // ---------- skin & theme ----------
 let catalog = { skins: [], themes: [] };
 
@@ -163,6 +239,7 @@ function render(c) {
   paintTransparency();
   paintScale();
   for (const id of ['showGraphs', 'alwaysOnTop', 'locked', 'openAtLogin']) $(id).checked = !!c[id];
+  renderShortcut(c);
 }
 
 window.widget.onConfig(render);

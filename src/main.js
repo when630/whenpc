@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, screen, powerMonitor } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, screen, powerMonitor, globalShortcut } = require('electron');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -57,6 +57,7 @@ const defaults = {
   theme: 'poster',
   skinThemes: {},     // last theme picked per skin
   appIcon: 'bars',
+  toggleShortcut: 'Ctrl+Alt+W', // global hide/show hotkey (Electron accelerator); '' = off
 };
 let config = structuredClone(defaults);
 
@@ -69,6 +70,7 @@ function loadConfig() {
   }
   normalizeTheme();
   if (!APP_ICONS.some((i) => i.id === config.appIcon)) config.appIcon = defaults.appIcon;
+  if (typeof config.toggleShortcut !== 'string') config.toggleShortcut = defaults.toggleShortcut;
 }
 
 const themeMeta = (id) => THEMES.find((t) => t.id === id);
@@ -100,7 +102,7 @@ function saveConfig() {
 }
 
 function publicConfig() {
-  return { ...config, themeDark: !!themeMeta(config.theme)?.dark, openAtLogin: app.getLoginItemSettings(loginItemOptions()).openAtLogin };
+  return { ...config, themeDark: !!themeMeta(config.theme)?.dark, openAtLogin: app.getLoginItemSettings(loginItemOptions()).openAtLogin, shortcutOk };
 }
 
 function broadcastConfig() {
@@ -114,6 +116,8 @@ function applyConfig(patch) {
   config = { ...config, ...patch, items: { ...config.items, ...(patch.items || {}) } };
   delete config.openAtLogin;
   delete config.themeDark;
+  delete config.shortcutOk;
+  if (typeof config.toggleShortcut !== 'string') config.toggleShortcut = prev.toggleShortcut;
   // Switching skin restores that skin's last theme (normalizeTheme picks it when the theme no longer fits).
   if ('skin' in patch && !('theme' in patch)) config.theme = null;
   normalizeTheme();
@@ -122,6 +126,7 @@ function applyConfig(patch) {
     applyAppIcon();
   }
 
+  if (prev.toggleShortcut !== config.toggleShortcut) registerShortcut();
   if ('openAtLogin' in patch) {
     app.setLoginItemSettings({ ...loginItemOptions(), openAtLogin: !!patch.openAtLogin });
   }
@@ -246,6 +251,28 @@ function hideWidget() {
   win?.hide();
 }
 
+function toggleWidget() {
+  if (!win) return;
+  if (win.isVisible()) hideWidget(); else showWidget();
+}
+
+// ---------- global hide/show shortcut ----------
+// register() returns false when another app already owns the combo (Windows doesn't let apps fight
+// over hotkeys); shortcutOk tells the settings page so it can say so.
+let shortcutOk = true;
+let shortcutPaused = false; // settings is recording a new combo; let the keys reach the page
+
+function registerShortcut() {
+  globalShortcut.unregisterAll();
+  shortcutOk = true;
+  if (!config.toggleShortcut || shortcutPaused) return;
+  try {
+    shortcutOk = globalShortcut.register(config.toggleShortcut, toggleWidget);
+  } catch {
+    shortcutOk = false; // malformed accelerator
+  }
+}
+
 // Show desktop (Win+D), sleep/lock, other topmost apps and display changes can minimize or hide the
 // widget or drop its topmost state. Check periodically and put it back.
 function guardWidget() {
@@ -316,6 +343,11 @@ ipcMain.on('config:set', (_e, patch) => {
 ipcMain.on('settings:open', openSettings);
 ipcMain.on('widget:reset-position', resetPosition);
 ipcMain.on('widget:toggle-expand', () => setExpanded(!config.expanded));
+ipcMain.on('shortcut:pause', (_e, on) => {
+  shortcutPaused = !!on;
+  registerShortcut();
+  if (!on) broadcastConfig();
+});
 ipcMain.handle('update:get', () => updater.getState());
 ipcMain.on('update:check', () => updater.check());
 ipcMain.on('update:install', () => updater.install());
@@ -349,7 +381,10 @@ function trayIcon() {
 
 function buildMenu() {
   return Menu.buildFromTemplate([
-    { label: '위젯 보이기', type: 'checkbox', checked: !!win?.isVisible(), click: (i) => (i.checked ? showWidget() : hideWidget()) },
+    {
+      label: '위젯 보이기', type: 'checkbox', checked: !!win?.isVisible(), click: (i) => (i.checked ? showWidget() : hideWidget()),
+      ...(config.toggleShortcut && shortcutOk ? { accelerator: config.toggleShortcut, registerAccelerator: false } : {}),
+    },
     { label: '위치 고정 (클릭 통과)', type: 'checkbox', checked: config.locked, click: (i) => applyConfig({ locked: i.checked }) },
     { label: '설정…', click: openSettings },
     ...(updater.getState().status === 'downloaded'
@@ -368,10 +403,7 @@ function createTray() {
   tray = new Tray(trayIcon());
   tray.setToolTip('whenpc');
   refreshMenu();
-  tray.on('click', () => {
-    if (!win) return;
-    if (win.isVisible()) hideWidget(); else showWidget();
-  });
+  tray.on('click', toggleWidget);
   tray.on('double-click', openSettings);
 }
 
@@ -441,6 +473,7 @@ app.whenReady().then(() => {
   loadConfig();
   createWindow();
   watchWidget();
+  registerShortcut();
   createTray();
   startCollector();
   pollLhm();
@@ -469,6 +502,8 @@ app.whenReady().then(() => {
     }, Number(process.env.WHENPC_SNAPSHOT_DELAY || 8000));
   }
 });
+
+app.on('will-quit', () => globalShortcut.unregisterAll());
 
 app.on('before-quit', () => {
   quitting = true;
