@@ -25,6 +25,8 @@ npm start
 | `src/lhm.js` | (선택) LibreHardwareMonitor에서 온도를 읽는다. |
 | `src/renderer/` | 위젯(`index.html`)과 설정 창(`settings.html`) UI. 스파크라인은 canvas로 그린다. |
 | `src/updater.js` | GitHub Releases 자동 업데이트(electron-updater). |
+| `src/deck.js` | 스트림덱 플러그인용 로컬 통로(`127.0.0.1:37631`). 사용량과 위젯 상태를 SSE로 보내고, 위젯 숨기기/보이기를 받는다. |
+| `integrations/ulanzi/` | Ulanzi 덱(D200 등) 플러그인. 앱 빌드에는 들어가지 않는다. |
 
 GPU 사용률은 작업 관리자와 같은 방식으로 계산한다. 엔진별로 프로세스 사용률을 합산한 뒤 가장 바쁜 엔진의 값을 쓴다.
 
@@ -52,6 +54,10 @@ Windows는 드라이버 없이 CPU 코어 온도를 제공하지 않는다. 그�
 1. [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor)를 관리자 권한으로 실행한다.
 2. `Options > Remote Web Server > Run`을 켠다(기본 포트 8085).
 3. 위젯이 자동으로 감지해서 `CPU xx°C · GPU xx°C`로 바꿔 표시한다.
+
+## 스트림덱 (Ulanzi)
+
+Ulanzi 덱 키에 사용량을 보여 주고, 키를 눌러 위젯을 숨기거나 다시 띄울 수 있다. 설치와 액션은 [integrations/ulanzi/README.md](integrations/ulanzi/README.md)를 본다.
 
 ## 개발용
 

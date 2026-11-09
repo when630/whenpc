@@ -1,0 +1,9 @@
+{
+  "Name": "whenpc",
+  "Description": "Shows whenpc usage on keys; press to hide or show the widget",
+  "Actions": [
+    { "Name": "Widget", "Tooltip": "Shows whether the widget is on screen. Press to hide or show it" },
+    { "Name": "Usage", "Tooltip": "One of CPU, memory, GPU, disk, network or temperature with a 60s trend. Press to hide or show the widget" }
+  ],
+  "Localization": {}
+}

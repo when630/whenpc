@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>whenpc</title>
+  <link rel="stylesheet" href="../libs/css/uspi.css">
+  <style>.note { color: #9a9a9a; font-size: 12px; line-height: 1.5; padding: 4px 0 0; }</style>
+</head>
+<body>
+  <div class="uspi-wrapper hidden">
+    <form id="property-inspector">
+      <div class="uspi-item">
+        <div class="uspi-item-label">항목</div>
+        <select class="uspi-item-value select" name="metric" id="metric">
+          <option value="cpu">CPU 사용률</option>
+          <option value="mem">메모리 사용률</option>
+          <option value="gpu">GPU 사용률</option>
+          <option value="disk">디스크 읽기·쓰기</option>
+          <option value="net">네트워크 다운로드·업로드</option>
+          <option value="temp">온도</option>
+        </select>
+      </div>
+    </form>
+    <div class="note">고른 항목의 지금 값과 최근 60초 추이를 보여 줘요. 색은 whenpc 위젯의 테마를 따라가요. 누르면 위젯을 숨기거나 다시 띄워요. 온도는 whenpc에서 LibreHardwareMonitor를 연동해야 CPU 온도가 나와요.</div>
+  </div>
+  <script src="../libs/js/constants.js"></script>
+  <script src="../libs/js/eventEmitter.js"></script>
+  <script src="../libs/js/timers.js"></script>
+  <script src="../libs/js/utils.js"></script>
+  <script src="../libs/js/ulanziApi.js"></script>
+  <script>
+    const sel = document.getElementById('metric')
+    const form = document.getElementById('property-inspector')
+    const load = (jsn) => { if (jsn && jsn.param && jsn.param.metric) sel.value = jsn.param.metric }
+    $UD.connect()
+    $UD.onConnected(() => {
+      document.querySelector('.uspi-wrapper').classList.remove('hidden')
+      form.addEventListener('change', () => $UD.sendParamFromPlugin({ metric: sel.value }))
+    })
+    $UD.onAdd(load)
+    $UD.onParamFromApp(load)
+  </script>
+</body>
+</html>

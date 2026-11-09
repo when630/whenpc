@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const readline = require('node:readline');
 const { readLhmTemps } = require('./lhm');
 const updater = require('./updater');
+const { DeckBridge } = require('./deck');
 const { skins: SKINS, themes: THEMES } = require('./themes.json');
 // App icons (build/icons/*.svg → scripts/render-icons.cjs → src/assets/icons/<id>.png).
 // The installer/shortcut icon is fixed at build time (build/icon.png); this choice changes tray and window icons.
@@ -109,6 +110,7 @@ function broadcastConfig() {
   const c = publicConfig();
   for (const w of [win, settingsWin]) if (w && !w.isDestroyed()) w.webContents.send('config', c);
   refreshMenu();
+  deck.changed();
 }
 
 function applyConfig(patch) {
@@ -217,8 +219,8 @@ function createWindow() {
     config.y = ny;
     saveConfig();
   });
-  win.on('show', () => { refreshMenu(); syncCollectorDetail(); });
-  win.on('hide', () => { refreshMenu(); syncCollectorDetail(); });
+  win.on('show', () => { refreshMenu(); syncCollectorDetail(); deck.changed(); });
+  win.on('hide', () => { refreshMenu(); syncCollectorDetail(); deck.changed(); });
   win.on('closed', () => { win = null; });
 }
 
@@ -255,6 +257,19 @@ function toggleWidget() {
   if (!win) return;
   if (win.isVisible()) hideWidget(); else showWidget();
 }
+
+// ---------- stream deck channel (src/deck.js, integrations/ulanzi) ----------
+const deck = new DeckBridge({
+  visible: () => !!win && !win.isDestroyed() && win.isVisible(),
+  theme: () => {
+    const t = themeMeta(config.theme);
+    return { id: t.id, bg: t.colors[0], ink: t.colors[1], sig: t.colors[2], dark: !!t.dark };
+  },
+  toggle: toggleWidget,
+  show: showWidget,
+  hide: hideWidget,
+  openSettings: () => openSettings(),
+});
 
 // ---------- global hide/show shortcut ----------
 // register() returns false when another app already owns the combo (Windows doesn't let apps fight
@@ -444,6 +459,7 @@ function startCollector() {
     data.temp.gpu = lhm.gpu;
     data.temp.source = lhm.cpu != null || lhm.gpu != null ? 'lhm' : 'acpi';
     win?.webContents.send('metrics', data);
+    deck.setMetrics(data);
   });
 
   let stderr = '';
@@ -474,6 +490,7 @@ app.whenReady().then(() => {
   createWindow();
   watchWidget();
   registerShortcut();
+  deck.start();
   createTray();
   startCollector();
   pollLhm();
@@ -508,6 +525,7 @@ app.on('will-quit', () => globalShortcut.unregisterAll());
 app.on('before-quit', () => {
   quitting = true;
   collector?.kill();
+  deck.stop();
 });
 
 app.on('window-all-closed', () => app.quit());

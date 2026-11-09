@@ -1,0 +1,40 @@
+{
+  "Author": "when630",
+  "Name": "whenpc",
+  "Description": "whenpc 사용량을 키에 보여 주고, 눌러 위젯을 숨기거나 다시 띄운다",
+  "Icon": "assets/plugin.png",
+  "Version": "0.1.0",
+  "Category": "whenpc",
+  "CategoryIcon": "assets/category.png",
+  "CodePath": "plugin/app.html",
+  "Type": "JavaScript",
+  "UUID": "com.ulanzi.ulanzistudio.whenpc",
+  "SupportedInMultiActions": false,
+  "Actions": [
+    {
+      "Name": "위젯",
+      "Icon": "assets/action-toggle.png",
+      "UUID": "com.ulanzi.ulanzistudio.whenpc.toggle",
+      "PropertyInspectorPath": "property-inspector/toggle.html",
+      "Tooltip": "위젯이 떠 있는지 보여 준다. 누르면 위젯을 숨기거나 다시 띄운다",
+      "States": [{ "Name": "Toggle", "Image": "assets/action-toggle.png" }],
+      "Controllers": ["Keypad"],
+      "Devices": [],
+      "SupportedInMultiActions": false
+    },
+    {
+      "Name": "사용량",
+      "Icon": "assets/action-metric.png",
+      "UUID": "com.ulanzi.ulanzistudio.whenpc.metric",
+      "PropertyInspectorPath": "property-inspector/metric.html",
+      "Tooltip": "CPU·메모리·GPU·디스크·네트워크·온도 중 하나와 최근 60초 추이. 누르면 위젯을 숨기거나 다시 띄운다",
+      "States": [{ "Name": "Metric", "Image": "assets/action-metric.png" }],
+      "Controllers": ["Keypad"],
+      "Devices": [],
+      "SupportedInMultiActions": false
+    }
+  ],
+  "OS": [
+    { "Platform": "windows", "MinimumVersion": "10" }
+  ]
+}
