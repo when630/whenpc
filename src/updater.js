@@ -9,14 +9,21 @@ const state = { status: app.isPackaged ? 'idle' : 'dev', version: null, percent:
 let onChange = () => {};
 let autoUpdater = null;
 
-// electron-updater's HttpError carries statusCode; its message is just "504 Gateway Time-out" plus headers.
-const httpStatus = (e) => (Number.isInteger(e?.statusCode) ? e.statusCode : null);
+// electron-updater's HttpError carries statusCode, but some steps rethrow it wrapped in a plain Error
+// whose message embeds the original stack ("Unable to find latest version … exists: HttpError: 504 …"),
+// so fall back to reading the status out of the message.
+function httpStatus(e) {
+  if (Number.isInteger(e?.statusCode)) return e.statusCode;
+  const m = /HttpError: (\d{3})\b/.exec(String(e?.message || ''));
+  return m ? Number(m[1]) : null;
+}
 const isServerError = (e) => httpStatus(e) >= 500 && httpStatus(e) <= 599;
 
 function friendlyError(e) {
   const msg = String(e?.message || e);
   if (isServerError(e)) return `GitHub 응답 지연 (${httpStatus(e)}) · 10분 뒤 다시 확인합니다`;
-  if (httpStatus(e) === 404 || /Unable to find latest version|HttpError: 404|No published versions/i.test(msg)) return '아직 배포된 릴리스가 없습니다';
+  // Only a real 404 (or an empty feed) means nothing is published; a wrapped timeout is not that.
+  if (httpStatus(e) === 404 || /No published versions/i.test(msg)) return '아직 배포된 릴리스가 없습니다';
   if (/ENOTFOUND|ETIMEDOUT|ECONNREFUSED|net::ERR_/i.test(msg)) return '네트워크에 연결할 수 없습니다';
   return msg.split('\n')[0].slice(0, 160);
 }
