@@ -1,6 +1,6 @@
 {
   "name": "whenpc",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "description": "Windows desktop widget for CPU / memory / GPU / disk / network / temperature usage",
   "author": "when630",
   "repository": "github:when630/whenpc",
