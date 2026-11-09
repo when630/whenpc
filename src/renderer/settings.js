@@ -68,6 +68,7 @@ const paintTransparency = bindRange('transparency', (v) => `${v}%`);
 const paintScale = bindRange('scale', (v) => `${v}%`);
 
 // ---------- switches ----------
+$('deckFollow').addEventListener('change', (e) => set({ deckFollow: e.target.checked }));
 for (const id of ['showGraphs', 'alwaysOnTop', 'locked', 'openAtLogin']) {
   $(id).addEventListener('change', (e) => set({ [id]: e.target.checked }));
 }
@@ -158,29 +159,30 @@ function radio(el, checked) {
   el.setAttribute('aria-checked', String(checked));
 }
 
-function renderSkins(c) {
-  $('skins').replaceChildren(...catalog.skins.map((s) => {
+// el: container, skin: selected skin id, pick(id): called on click. Shared by the widget and deck pickers.
+function renderSkins(el, skin, pick) {
+  el.replaceChildren(...catalog.skins.map((s) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'skin-card';
-    radio(b, s.id === c.skin);
+    radio(b, s.id === skin);
     const name = document.createElement('b');
     name.textContent = s.name;
     const note = document.createElement('span');
     note.textContent = s.note;
     b.append(name, note);
-    b.addEventListener('click', () => set({ skin: s.id }));
+    b.addEventListener('click', () => pick(s.id));
     return b;
   }));
 }
 
-function renderThemes(c) {
-  $('themes').replaceChildren(...catalog.themes.filter((t) => t.skin === c.skin).map((t) => {
+function renderThemes(el, skin, theme, pick) {
+  el.replaceChildren(...catalog.themes.filter((t) => t.skin === skin).map((t) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'theme-chip';
     b.title = t.note;
-    radio(b, t.id === c.theme);
+    radio(b, t.id === theme);
     const sample = document.createElement('span');
     sample.className = 'sample';
     sample.textContent = 'Aa';
@@ -194,7 +196,7 @@ function renderThemes(c) {
     note.className = 'note';
     note.textContent = t.note;
     b.append(sample, name, note);
-    b.addEventListener('click', () => set({ theme: t.id }));
+    b.addEventListener('click', () => pick(t.id));
     return b;
   }));
 }
@@ -226,8 +228,14 @@ function render(c) {
   html.dataset.skin = c.skin;
   html.dataset.theme = c.theme;
   html.toggleAttribute('data-dark', !!c.themeDark);
-  renderSkins(c);
-  renderThemes(c);
+  renderSkins($('skins'), c.skin, (id) => set({ skin: id }));
+  renderThemes($('themes'), c.skin, c.theme, (id) => set({ theme: id }));
+  $('deckFollow').checked = !!c.deckFollow;
+  $('deckPick').hidden = !!c.deckFollow;
+  if (!c.deckFollow) {
+    renderSkins($('deckSkins'), c.deckSkin, (id) => set({ deckSkin: id }));
+    renderThemes($('deckThemes'), c.deckSkin, c.deckTheme, (id) => set({ deckTheme: id }));
+  }
   renderIcons(c);
   for (const [k, { input, row, parent }] of Object.entries(itemInputs)) {
     input.checked = !!c.items[k];

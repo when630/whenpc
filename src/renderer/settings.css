@@ -192,6 +192,12 @@ button {
 button:hover { border-color: var(--muted); }
 button.primary { background: var(--ac); color: var(--on-ac); font-weight: 600; border-color: transparent; }
 
+/* ---------- stream deck picker ---------- */
+.deck-pick { margin-top: 12px; }
+.deck-pick[hidden] { display: none; }
+.deck-pick h3 { font-size: 12px; font-weight: 600; color: var(--muted); margin: 14px 0 8px; }
+.deck-pick h3:first-child { margin-top: 0; }
+
 /* ---------- shortcut recorder ---------- */
 .shortcut { display: flex; gap: 6px; flex-shrink: 0; }
 .kbd { font-family: 'Geist Mono', monospace; font-size: 12px; min-width: 96px; white-space: nowrap; }

@@ -58,6 +58,9 @@ const defaults = {
   theme: 'poster',
   skinThemes: {},     // last theme picked per skin
   appIcon: 'bars',
+  deckFollow: true,   // stream deck keys use the widget's skin/theme
+  deckSkin: null,     // otherwise these (null = start from the widget's)
+  deckTheme: null,
   toggleShortcut: 'Ctrl+Alt+W', // global hide/show hotkey (Electron accelerator); '' = off
 };
 let config = structuredClone(defaults);
@@ -70,6 +73,7 @@ function loadConfig() {
     config = structuredClone(defaults);
   }
   normalizeTheme();
+  normalizeDeckTheme();
   if (!APP_ICONS.some((i) => i.id === config.appIcon)) config.appIcon = defaults.appIcon;
   if (typeof config.toggleShortcut !== 'string') config.toggleShortcut = defaults.toggleShortcut;
 }
@@ -87,6 +91,21 @@ function normalizeTheme() {
   const t = themeMeta(config.theme);
   nativeTheme.themeSource = t.dark ? 'dark' : 'light';
   if (settingsWin && !settingsWin.isDestroyed()) settingsWin.setBackgroundColor(t.colors[0]);
+}
+
+// Same rule for the stream deck's own pick. While it follows the widget it mirrors the widget's, so
+// turning "follow" off starts from what the keys already show.
+function normalizeDeckTheme() {
+  if (config.deckFollow) {
+    config.deckSkin = config.skin;
+    config.deckTheme = config.theme;
+    return;
+  }
+  if (!SKINS.some((s) => s.id === config.deckSkin)) config.deckSkin = config.skin;
+  if (themeMeta(config.deckTheme)?.skin !== config.deckSkin) {
+    const widgets = config.skinThemes?.[config.deckSkin];
+    config.deckTheme = themeMeta(widgets)?.skin === config.deckSkin ? widgets : THEMES.find((t) => t.skin === config.deckSkin).id;
+  }
 }
 
 let saveTimer = null;
@@ -122,7 +141,9 @@ function applyConfig(patch) {
   if (typeof config.toggleShortcut !== 'string') config.toggleShortcut = prev.toggleShortcut;
   // Switching skin restores that skin's last theme (normalizeTheme picks it when the theme no longer fits).
   if ('skin' in patch && !('theme' in patch)) config.theme = null;
+  if ('deckSkin' in patch && !('deckTheme' in patch)) config.deckTheme = null;
   normalizeTheme();
+  normalizeDeckTheme();
   if ('appIcon' in patch) {
     if (!APP_ICONS.some((i) => i.id === config.appIcon)) config.appIcon = defaults.appIcon;
     applyAppIcon();
@@ -262,8 +283,8 @@ function toggleWidget() {
 const deck = new DeckBridge({
   visible: () => !!win && !win.isDestroyed() && win.isVisible(),
   theme: () => {
-    const t = themeMeta(config.theme);
-    return { id: t.id, bg: t.colors[0], ink: t.colors[1], sig: t.colors[2], dark: !!t.dark };
+    const t = themeMeta(config.deckFollow ? config.theme : config.deckTheme);
+    return { id: t.id, skin: t.skin, bg: t.colors[0], ink: t.colors[1], sig: t.colors[2], dark: !!t.dark };
   },
   toggle: toggleWidget,
   show: showWidget,

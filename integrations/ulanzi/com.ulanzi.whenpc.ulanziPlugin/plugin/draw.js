@@ -1,10 +1,22 @@
-// 키 화면 그리기 (196×196 PNG). 색은 whenpc 위젯의 현재 테마(바탕·글자·강조)를 따른다
+// 키 화면 그리기 (196×196 PNG). 색은 whenpc가 보내는 테마(바탕·글자·강조), 글꼴은 스킨을 따른다
 /* exported Draw */
 const Draw = (() => {
   const SIZE = 196
   const PAD = 16
-  const FONT = "'Pretendard Variable', 'Segoe UI', 'Malgun Gothic', sans-serif"
-  const MONO = "'Cascadia Mono', Consolas, monospace"
+  const SANS = "'Segoe UI', 'Malgun Gothic', sans-serif"
+  const MONO = "'Cascadia Mono', Consolas, 'Malgun Gothic', monospace"
+  // 스킨별 글꼴 느낌. 덱 WebView에는 whenpc의 글꼴이 없어 Windows 기본 글꼴로 비슷하게 맞춘다
+  //  heavy: 이름·큰 숫자, mid: 보조 글
+  const SKIN = {
+    poster: { font: SANS, mono: MONO, heavy: 900, mid: 700 },
+    soft: { font: SANS, mono: SANS, heavy: 600, mid: 500 },
+    tui: { font: MONO, mono: MONO, heavy: 700, mid: 400 },
+    zen: { font: "Georgia, 'Batang', serif", mono: "Georgia, 'Batang', serif", heavy: 400, mid: 400 },
+    glass: { font: "'Segoe UI Variable Display', " + SANS, mono: SANS, heavy: 300, mid: 400 },
+    ide: { font: "'Cascadia Code', " + MONO, mono: "'Cascadia Code', " + MONO, heavy: 600, mid: 400 },
+    sketch: { font: "'Segoe Print', 'Comic Sans MS', " + SANS, mono: "'Segoe Print', 'Comic Sans MS', " + SANS, heavy: 700, mid: 400 },
+  }
+  let style = SKIN.poster
   const FALLBACK = { bg: '#0a0a0a', ink: '#ffffff', sig: '#ff2a12', dark: true }
 
   const LABEL = { cpu: 'CPU', mem: 'MEM', gpu: 'GPU', disk: 'DISK', net: 'NET', temp: 'TEMP' }
@@ -24,6 +36,7 @@ const Draw = (() => {
 
   function palette(theme) {
     const t = { ...FALLBACK, ...(theme || {}) }
+    style = SKIN[t.skin] || SKIN.poster
     return { ...t, dim: mix(t.ink, t.bg, 0.55), faint: mix(t.ink, t.bg, 0.85) }
   }
 
@@ -34,8 +47,9 @@ const Draw = (() => {
     ctx.textAlign = 'left'
   }
 
-  function font(weight, px, family = FONT) {
-    ctx.font = `${weight} ${px}px ${family}`
+  /** weight 800 이상은 스킨의 heavy, 그 아래는 mid. mono: 숫자·속도 같은 고정폭 자리 */
+  function font(weight, px, mono = false) {
+    ctx.font = `${weight >= 800 ? style.heavy : style.mid} ${px}px ${mono ? style.mono : style.font}`
   }
 
   const png = () => canvas.toDataURL('image/png')
@@ -87,7 +101,7 @@ const Draw = (() => {
     ctx.fillStyle = c.ink
     ctx.fillText(name, PAD, 36)
     if (side) {
-      font(600, 15, MONO)
+      font(600, 15, true)
       ctx.textAlign = 'right'
       ctx.fillStyle = c.dim
       ctx.fillText(side, SIZE - PAD, 34)
@@ -132,7 +146,7 @@ const Draw = (() => {
         const [down, up] = kind === 'net' ? [m.netRx, m.netTx] : [m.diskRead, m.diskWrite]
         const [a, b] = kind === 'net' ? ['↓', '↑'] : ['R', 'W']
         header(c, LABEL[kind], kind === 'disk' && m.disk != null ? `${Math.round(m.disk)}%` : '')
-        font(800, 30, MONO)
+        font(800, 30, true)
         ctx.fillStyle = c.ink
         ctx.fillText(`${a} ${rate(down)}`, PAD, 76)
         ctx.fillText(`${b} ${rate(up)}`, PAD, 112)

@@ -45,6 +45,23 @@
     </section>
 
     <section>
+      <h2>스트림덱 키</h2>
+      <div class="group">
+        <label class="row">
+          <span class="row-text">위젯과 같은 스킨·테마<small>끄면 Ulanzi 덱 키에 쓸 스킨과 테마를 따로 고릅니다</small></span>
+          <input type="checkbox" class="switch" id="deckFollow">
+        </label>
+      </div>
+      <div id="deckPick" class="deck-pick" hidden>
+        <h3>덱 스킨</h3>
+        <div class="skins" id="deckSkins" role="radiogroup" aria-label="덱 스킨"></div>
+        <h3>덱 테마</h3>
+        <div class="themes" id="deckThemes" role="radiogroup" aria-label="덱 테마"></div>
+      </div>
+      <p class="hint">덱 키는 테마의 색과 스킨의 글꼴 느낌을 따릅니다. whenpc 덱 플러그인이 설치되어 있어야 합니다.</p>
+    </section>
+
+    <section>
       <h2>표시 항목</h2>
       <div class="group" id="items"></div>
     </section>
