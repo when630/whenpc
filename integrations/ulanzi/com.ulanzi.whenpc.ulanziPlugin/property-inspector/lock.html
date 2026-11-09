@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>whenpc</title>
+  <link rel="stylesheet" href="../libs/css/uspi.css">
+  <style>.note { color: #9a9a9a; font-size: 12px; line-height: 1.5; padding: 4px 0 0; }</style>
+</head>
+<body>
+  <div class="uspi-wrapper hidden">
+    <div class="note">위치 고정(클릭 통과)이 켜져 있으면 LOCKED, 꺼져 있으면 FREE예요. 켜면 위젯이 클릭을 받지 않아 아래 창을 그대로 누를 수 있어요. 누르면 켜고 꺼요.</div>
+  </div>
+  <script src="../libs/js/constants.js"></script>
+  <script src="../libs/js/eventEmitter.js"></script>
+  <script src="../libs/js/timers.js"></script>
+  <script src="../libs/js/utils.js"></script>
+  <script src="../libs/js/ulanziApi.js"></script>
+  <script>
+    $UD.connect()
+    $UD.onConnected(() => document.querySelector('.uspi-wrapper').classList.remove('hidden'))
+  </script>
+</body>
+</html>

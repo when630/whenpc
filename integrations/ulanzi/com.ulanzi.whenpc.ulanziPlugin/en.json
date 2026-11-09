@@ -2,8 +2,30 @@
   "Name": "whenpc",
   "Description": "Shows whenpc usage on keys; press to hide or show the widget",
   "Actions": [
-    { "Name": "Widget", "Tooltip": "Shows whether the widget is on screen. Press to hide or show it" },
-    { "Name": "Usage", "Tooltip": "One of CPU, memory, GPU, disk, network or temperature with a 60s trend. Press to hide or show the widget" }
+    {
+      "Name": "Widget",
+      "Tooltip": "Shows whether the widget is on screen. Press to hide or show it"
+    },
+    {
+      "Name": "Usage",
+      "Tooltip": "One of CPU, memory, GPU, disk, network or temperature with a 60s trend, or a summary or drive space. Press to hide or show the widget"
+    },
+    {
+      "Name": "Lock",
+      "Tooltip": "Shows whether lock position (click-through) is on. Press to toggle it"
+    },
+    {
+      "Name": "Top processes",
+      "Tooltip": "The three processes using the most CPU or memory. Press to open the widget's process panel on that tab"
+    },
+    {
+      "Name": "Theme",
+      "Tooltip": "Shows the current theme in its own colors. Press for the next theme of the same skin"
+    },
+    {
+      "Name": "Uptime",
+      "Tooltip": "Time since the PC started, and when it booted. Press to hide or show the widget"
+    }
   ],
   "Localization": {}
 }

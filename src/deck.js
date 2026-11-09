@@ -3,8 +3,12 @@ const http = require('node:http');
 // Local HTTP channel for stream deck plugins (integrations/ulanzi). Listens on 127.0.0.1 only and checks
 // Host/Origin so pages from other sites can't read it or drive the widget.
 //   GET  /state           current state once
-//   GET  /events          SSE: current state on connect, then on every metrics tick / widget change
+//   GET  /events          SSE: current state on connect, then on every metrics tick / widget change.
+//                         ?detail=1 asks for per-process data (top CPU processes) while connected
 //   POST /widget/toggle   hide or show the widget (also /widget/show, /widget/hide)
+//   POST /widget/lock     toggle "lock position (click-through)"
+//   POST /widget/detail   show the widget with the process panel open (?tab=cpu|mem|gpu|io)
+//   POST /theme/next      switch to the next theme of the same skin (?target=widget|deck)
 //   POST /settings/open   open the settings window
 const DECK_PORT = 37631;
 
@@ -34,15 +38,27 @@ function summarize(m) {
     netTx: m.net.tx,
     temp: round1(temp),
     tempLabel: t.source === 'lhm' ? (t.cpu != null ? 'CPU' : 'GPU') : t.acpi != null ? 'ACPI' : null,
+    uptime: m.sys?.uptime ?? null, // seconds
+    drives: (m.disk.drives || []).map((d) => ({ name: d.name, label: d.label || '', total: d.total, free: d.free })),
+    // Only present while per-process collection is on (panel open, or a client asked with ?detail=1).
+    // Top 3 by CPU (%) and by memory (private working set, bytes); same-name processes are grouped.
+    top: m.detail?.cpu && m.detail?.mem
+      ? {
+        cpu: m.detail.cpu.slice(0, 3).map((p) => ({ name: p.n, count: p.c, cpu: round1(p.cpu) })),
+        mem: m.detail.mem.slice(0, 3).map((p) => ({ name: p.n, count: p.c, mem: p.mem })),
+      }
+      : null,
   };
 }
 
 class DeckBridge {
-  // hooks: { visible(), theme(), toggle(), show(), hide(), openSettings() }
+  // hooks: { visible(), locked(), theme(), themes(), toggle(), show(), hide(), toggleLock(), openDetail(tab),
+  //          nextTheme(target), openSettings(), detailDemandChanged() }
   constructor(hooks) {
     this.hooks = hooks;
     this.server = null;
     this.clients = new Set();
+    this.detailClients = new Set(); // SSE clients that asked for per-process data
     this.metrics = null;
     this.seq = 0; // bumps with each metrics sample, so clients can tell new samples from widget-only changes
     this.heartbeat = null;
@@ -66,6 +82,7 @@ class DeckBridge {
     clearInterval(this.heartbeat);
     for (const c of this.clients) c.end();
     this.clients.clear();
+    this.detailClients.clear();
     this.server?.close();
     this.server = null;
   }
@@ -86,8 +103,13 @@ class DeckBridge {
     this.pushTimer = setTimeout(() => { this.pushTimer = null; this.push(); }, 100);
   }
 
+  // True while some plugin shows top processes; main keeps the collector's per-process counters on.
+  wantsDetail() {
+    return this.detailClients.size > 0;
+  }
+
   state() {
-    return { visible: this.hooks.visible(), theme: this.hooks.theme(), metrics: this.metrics, seq: this.seq, at: Date.now() };
+    return { visible: this.hooks.visible(), locked: this.hooks.locked(), theme: this.hooks.theme(), themes: this.hooks.themes(), metrics: this.metrics, seq: this.seq, at: Date.now() };
   }
 
   push() {
@@ -111,7 +133,8 @@ class DeckBridge {
       res.writeHead(204, { 'Access-Control-Allow-Methods': 'GET, POST', 'Access-Control-Max-Age': '600' }).end();
       return;
     }
-    const { pathname } = new URL(req.url || '/', `http://${req.headers.host}`);
+    const url = new URL(req.url || '/', `http://${req.headers.host}`);
+    const { pathname } = url;
     if (req.method === 'GET' && pathname === '/state') {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }).end(JSON.stringify(this.state()));
       return;
@@ -120,13 +143,24 @@ class DeckBridge {
       res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
       res.write(`retry: 2000\ndata: ${JSON.stringify(this.state())}\n\n`);
       this.clients.add(res);
-      req.on('close', () => this.clients.delete(res));
+      const detail = url.searchParams.get('detail') === '1';
+      if (detail) {
+        this.detailClients.add(res);
+        if (this.detailClients.size === 1) this.hooks.detailDemandChanged();
+      }
+      req.on('close', () => {
+        this.clients.delete(res);
+        if (this.detailClients.delete(res) && this.detailClients.size === 0) this.hooks.detailDemandChanged();
+      });
       return;
     }
     const actions = {
       '/widget/toggle': this.hooks.toggle,
       '/widget/show': this.hooks.show,
       '/widget/hide': this.hooks.hide,
+      '/widget/lock': this.hooks.toggleLock,
+      '/widget/detail': () => this.hooks.openDetail(url.searchParams.get('tab') || 'cpu'),
+      '/theme/next': () => this.hooks.nextTheme(url.searchParams.get('target') === 'deck' ? 'deck' : 'widget'),
       '/settings/open': this.hooks.openSettings,
     };
     if (req.method === 'POST' && actions[pathname]) {

@@ -283,16 +283,37 @@ function toggleWidget() {
 }
 
 // ---------- stream deck channel (src/deck.js, integrations/ulanzi) ----------
+const DETAIL_TABS = ['cpu', 'mem', 'gpu', 'io'];
+function deckThemeInfo(id) {
+  const t = themeMeta(id);
+  return { id: t.id, name: t.name, skin: t.skin, bg: t.colors[0], ink: t.colors[1], sig: t.colors[2], dark: !!t.dark };
+}
 const deck = new DeckBridge({
   visible: () => !!win && !win.isDestroyed() && win.isVisible(),
-  theme: () => {
-    const t = themeMeta(config.deckFollow ? config.theme : config.deckTheme);
-    return { id: t.id, skin: t.skin, bg: t.colors[0], ink: t.colors[1], sig: t.colors[2], dark: !!t.dark };
-  },
+  locked: () => !!config.locked,
+  theme: () => deckThemeInfo(config.deckFollow ? config.theme : config.deckTheme),
+  // For the theme key: what the widget and the deck keys use now (the deck's equals the widget's while following).
+  themes: () => ({ widget: deckThemeInfo(config.theme), deck: deckThemeInfo(config.deckTheme), deckFollow: !!config.deckFollow }),
   toggle: toggleWidget,
   show: showWidget,
   hide: hideWidget,
+  toggleLock: () => applyConfig({ locked: !config.locked }),
+  openDetail: (tab) => {
+    showWidget();
+    if (DETAIL_TABS.includes(tab)) applyConfig({ detailTab: tab });
+    setExpanded(true);
+  },
+  nextTheme: (target) => {
+    // The deck has its own theme only when it doesn't follow the widget; otherwise both change together.
+    const deckOwn = target === 'deck' && !config.deckFollow;
+    const skin = deckOwn ? config.deckSkin : config.skin;
+    const current = deckOwn ? config.deckTheme : config.theme;
+    const list = THEMES.filter((t) => t.skin === skin);
+    const next = list[(list.findIndex((t) => t.id === current) + 1) % list.length].id;
+    applyConfig(deckOwn ? { deckTheme: next } : { theme: next });
+  },
   openSettings: () => openSettings(),
+  detailDemandChanged: () => syncCollectorDetail(),
 });
 
 // ---------- global hide/show shortcut ----------
@@ -451,9 +472,10 @@ let collector = null;
 let restartDelay = 1000;
 let collectorDetail = null;
 
-// Per-process counters cost a little CPU, so collect them only while the panel is open and visible.
+// Per-process counters cost a little CPU, so collect them only while the panel is open and visible,
+// or while a stream deck key shows top processes.
 function syncCollectorDetail() {
-  const on = !!(config.expanded && win?.isVisible());
+  const on = !!(config.expanded && win?.isVisible()) || deck.wantsDetail();
   if (!collector || collectorDetail === on) return;
   collectorDetail = on;
   collector.stdin.write(`detail ${on ? 1 : 0}\n`);

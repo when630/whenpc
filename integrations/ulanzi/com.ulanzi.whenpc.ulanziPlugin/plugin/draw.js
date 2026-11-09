@@ -212,5 +212,235 @@ const Draw = (() => {
     return png()
   }
 
-  return { metric, toggle, offline }
+  /** 글자가 폭을 넘으면 끝을 …로 자른다 */
+  function fit(text, width) {
+    if (ctx.measureText(text).width <= width) return text
+    let t = text
+    while (t && ctx.measureText(t + '…').width > width) t = t.slice(0, -1)
+    return t + '…'
+  }
+
+  /** 가로 막대 하나. p: 0~100, hot이면 강조색 */
+  function hbar(c, x, y, w, h, p, hot) {
+    ctx.fillStyle = c.faint
+    ctx.fillRect(x, y, w, h)
+    if (p == null) return
+    ctx.fillStyle = hot ? c.sig : c.ink
+    ctx.fillRect(x, y, Math.max(0, Math.min(1, p / 100)) * w, h)
+  }
+
+  /** 요약: CPU·MEM·GPU 세 줄 (이름 · 막대 · %) */
+  function summary(m, theme) {
+    const c = palette(theme)
+    clear(c.bg)
+    header(c, 'PC', '')
+    const rows = [['CPU', m.cpu], ['MEM', m.mem], ['GPU', m.gpu]]
+    rows.forEach(([name, v], i) => {
+      const y = 70 + i * 44
+      font(700, 17)
+      ctx.fillStyle = c.dim
+      ctx.fillText(name, PAD, y)
+      font(800, 22, true)
+      ctx.textAlign = 'right'
+      ctx.fillStyle = v >= 90 ? c.sig : c.ink
+      ctx.fillText(v == null ? '–' : `${Math.round(v)}%`, SIZE - PAD, y)
+      ctx.textAlign = 'left'
+      hbar(c, PAD, y + 9, SIZE - PAD * 2, 8, v, v >= 90)
+    })
+    return png()
+  }
+
+  /** 드라이브 용량. drive: 'C:' 같은 이름, 'all'이면 최대 3개를 줄로 */
+  function drives(list, drive, theme) {
+    const c = palette(theme)
+    clear(c.bg)
+    const GB = 1024 ** 3
+    const free = (d) => {
+      const g = d.free / GB
+      return g >= 1000 ? `${(g / 1024).toFixed(1)}T` : `${Math.round(g)}G`
+    }
+    const used = (d) => (d.total ? ((d.total - d.free) / d.total) * 100 : null)
+    if (!list || !list.length) {
+      header(c, 'DISK', '')
+      big(c, null)
+      return png()
+    }
+    if (drive && drive !== 'all') {
+      const d = list.find((x) => x.name.toUpperCase() === drive.toUpperCase())
+      header(c, drive.toUpperCase(), d ? `${Math.round(used(d))}%` : '')
+      if (!d) {
+        font(600, 16)
+        ctx.fillStyle = c.dim
+        ctx.fillText('드라이브 없음', PAD, 100)
+        return png()
+      }
+      big(c, free(d).slice(0, -1), free(d).slice(-1), false)
+      font(600, 15)
+      ctx.fillStyle = c.dim
+      ctx.fillText('남음', PAD, 132)
+      hbar(c, PAD, 154, SIZE - PAD * 2, 14, used(d), used(d) >= 90)
+      return png()
+    }
+    header(c, 'DRIVES', '')
+    list.slice(0, 3).forEach((d, i) => {
+      const y = 70 + i * 44
+      font(800, 18, true)
+      ctx.fillStyle = c.ink
+      ctx.fillText(d.name, PAD, y)
+      font(700, 18, true)
+      ctx.textAlign = 'right'
+      ctx.fillStyle = used(d) >= 90 ? c.sig : c.dim
+      ctx.fillText(free(d), SIZE - PAD, y)
+      ctx.textAlign = 'left'
+      hbar(c, PAD, y + 9, SIZE - PAD * 2, 8, used(d), used(d) >= 90)
+    })
+    return png()
+  }
+
+  /** 위치 고정(클릭 통과). locked면 닫힌 자물쇠 + 강조색 */
+  function lock(locked, theme) {
+    const c = palette(theme)
+    clear(c.bg)
+    font(800, 22)
+    ctx.fillStyle = c.ink
+    ctx.fillText('PC_', PAD, 36)
+    const x = 66
+    const y = 88
+    const w = 64
+    const h = 50
+    // 고리: 잠기면 몸통에 꽂히고, 풀리면 오른쪽으로 들려 있다
+    ctx.lineWidth = 9
+    ctx.strokeStyle = locked ? c.ink : c.dim
+    ctx.beginPath()
+    if (locked) {
+      ctx.moveTo(x + 14, y)
+      ctx.lineTo(x + 14, y - 16)
+      ctx.arc(x + w / 2, y - 16, w / 2 - 14, Math.PI, 0)
+      ctx.lineTo(x + w - 14, y)
+    } else {
+      ctx.moveTo(x + 14, y)
+      ctx.lineTo(x + 14, y - 26)
+      ctx.arc(x + w / 2 + 2, y - 30, w / 2 - 14, Math.PI, 0)
+      ctx.lineTo(x + w - 10, y - 18)
+    }
+    ctx.stroke()
+    ctx.fillStyle = locked ? c.sig : c.dim
+    ctx.fillRect(x, y, w, h)
+    font(800, 20)
+    ctx.textAlign = 'center'
+    ctx.fillStyle = locked ? c.ink : c.dim
+    ctx.fillText(locked ? 'LOCKED' : 'FREE', SIZE / 2, 172)
+    return png()
+  }
+
+  /** 바이트 → '2.1G' · '812M' 같은 짧은 표기 */
+  function size(b) {
+    if (b == null || !Number.isFinite(b)) return '–'
+    const G = 1024 ** 3
+    const M = 1024 ** 2
+    return b >= G ? `${(b / G).toFixed(b >= 10 * G ? 0 : 1)}G` : `${Math.round(b / M)}M`
+  }
+
+  /**
+   * 상위 프로세스. topData: { cpu: [{ name, count, cpu }], mem: [{ name, count, mem }] } 또는 null(모으는 중),
+   * basis: 'cpu' | 'mem', m: metrics (머리글의 전체 사용률, 메모리 총량)
+   */
+  function top(topData, basis, m, theme) {
+    const c = palette(theme)
+    clear(c.bg)
+    const mem = basis === 'mem'
+    const total = mem ? m.mem : m.cpu
+    header(c, 'TOP', `${mem ? 'MEM' : 'CPU'}${total == null ? '' : ` ${Math.round(total)}%`}`)
+    const list = topData && topData[mem ? 'mem' : 'cpu']
+    if (!list) {
+      font(600, 15)
+      ctx.fillStyle = c.dim
+      ctx.fillText('모으는 중…', PAD, 100)
+      return png()
+    }
+    list.slice(0, 3).forEach((p, i) => {
+      const y = 76 + i * 42
+      // 막대·강조 기준: CPU는 사용률, 메모리는 전체 RAM 대비 비율
+      const ratio = mem ? (m.memTotal ? (p.mem / m.memTotal) * 100 : 0) : p.cpu
+      const value = mem ? size(p.mem) : `${p.cpu < 10 ? p.cpu.toFixed(1) : Math.round(p.cpu)}%`
+      font(800, 18, true)
+      ctx.textAlign = 'right'
+      ctx.fillStyle = ratio >= (mem ? 25 : 50) ? c.sig : c.ink
+      ctx.fillText(value, SIZE - PAD, y)
+      const pw = ctx.measureText(value).width + 8
+      ctx.textAlign = 'left'
+      font(700, 18)
+      ctx.fillStyle = c.ink
+      ctx.fillText(fit(p.name, SIZE - PAD * 2 - pw), PAD, y)
+      ctx.fillStyle = i === 0 ? c.sig : c.faint
+      ctx.fillRect(PAD, y + 9, Math.max(4, Math.min(1, ratio / 100) * (SIZE - PAD * 2)), 4)
+    })
+    return png()
+  }
+
+  /**
+   * 가동 시간: 가장 큰 단위를 크게(3일 · 4시간 · 12분), 그 아래 나머지와 부팅 시각.
+   * sec: 가동 초, now: 지금 (부팅 시각 = now - sec)
+   */
+  function uptime(sec, now, theme) {
+    const c = palette(theme)
+    clear(c.bg)
+    header(c, 'UPTIME', '')
+    if (sec == null) {
+      big(c, null)
+      return png()
+    }
+    const d = Math.floor(sec / 86400)
+    const h = Math.floor((sec % 86400) / 3600)
+    const mi = Math.floor((sec % 3600) / 60)
+    const [value, unit, rest] = d ? [d, '일', `${h}시간 ${mi}분`] : h ? [h, '시간', `${mi}분`] : [mi, '분', '']
+    big(c, value, unit, false)
+    if (rest) {
+      font(700, 18)
+      ctx.fillStyle = c.ink
+      ctx.fillText(rest, PAD, 134)
+    }
+    // 오래 켜 둔 PC(7일 이상)는 구분선을 강조색으로
+    ctx.fillStyle = d >= 7 ? c.sig : c.faint
+    ctx.fillRect(PAD, 150, SIZE - PAD * 2, 2)
+    const boot = new Date(now.getTime() - sec * 1000)
+    const hh = String(boot.getHours()).padStart(2, '0')
+    const mm = String(boot.getMinutes()).padStart(2, '0')
+    font(600, 15)
+    ctx.fillStyle = c.dim
+    ctx.fillText('부팅', PAD, 178)
+    font(700, 15, true)
+    ctx.textAlign = 'right'
+    ctx.fillText(`${boot.getMonth() + 1}/${boot.getDate()} ${hh}:${mm}`, SIZE - PAD, 178)
+    ctx.textAlign = 'left'
+    return png()
+  }
+
+  /** 테마 키: 그 테마의 색 그대로 미리보기. info: { name, bg, ink, sig, skin }, target: 'widget' | 'deck' */
+  function themeKey(info, target, theme) {
+    const c = palette(info || theme)
+    clear(c.bg)
+    font(800, 16)
+    ctx.fillStyle = c.dim
+    ctx.fillText(target === 'deck' ? 'DECK THEME' : 'THEME', PAD, 32)
+    font(800, 64)
+    ctx.fillStyle = c.ink
+    ctx.fillText('Aa', PAD - 2, 112)
+    ctx.fillStyle = c.sig
+    ctx.fillRect(SIZE - PAD - 34, 86, 34, 26)
+    font(800, 20)
+    ctx.fillStyle = c.ink
+    ctx.fillText(fit(info ? info.name : '–', SIZE - PAD * 2 - 22), PAD, 170)
+    // 누르면 다음 테마로: 오른쪽 아래 화살표
+    ctx.strokeStyle = c.dim
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.moveTo(SIZE - PAD - 12, 158)
+    ctx.lineTo(SIZE - PAD - 4, 164)
+    ctx.lineTo(SIZE - PAD - 12, 170)
+    ctx.stroke()
+    return png()
+  }
+
+  return { metric, summary, drives, lock, top, uptime, themeKey, toggle, offline }
 })()

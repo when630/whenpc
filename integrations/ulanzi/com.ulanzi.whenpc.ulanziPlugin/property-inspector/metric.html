@@ -18,10 +18,18 @@
           <option value="disk">디스크 읽기·쓰기</option>
           <option value="net">네트워크 다운로드·업로드</option>
           <option value="temp">온도</option>
+          <option value="summary">요약 (CPU·메모리·GPU)</option>
+          <option value="drives">드라이브 용량</option>
+        </select>
+      </div>
+      <div class="uspi-item" id="drive-row" hidden>
+        <div class="uspi-item-label">드라이브</div>
+        <select class="uspi-item-value select" name="drive" id="drive">
+          <option value="all">전부 (최대 3개)</option>
         </select>
       </div>
     </form>
-    <div class="note">고른 항목의 지금 값과 최근 60초 추이를 보여 줘요. 색은 whenpc 위젯의 테마를 따라가요. 누르면 위젯을 숨기거나 다시 띄워요. 온도는 whenpc에서 LibreHardwareMonitor를 연동해야 CPU 온도가 나와요.</div>
+    <div class="note">고른 항목의 지금 값과 최근 60초 추이를 보여 줘요. 요약은 CPU·메모리·GPU를 막대 셋으로, 드라이브 용량은 남은 공간을 보여 줘요. 색은 whenpc 위젯의 테마를 따라가요. 누르면 위젯을 숨기거나 다시 띄워요. 온도는 whenpc에서 LibreHardwareMonitor를 연동해야 CPU 온도가 나와요.</div>
   </div>
   <script src="../libs/js/constants.js"></script>
   <script src="../libs/js/eventEmitter.js"></script>
@@ -30,12 +38,31 @@
   <script src="../libs/js/ulanziApi.js"></script>
   <script>
     const sel = document.getElementById('metric')
+    const drive = document.getElementById('drive')
+    const driveRow = document.getElementById('drive-row')
     const form = document.getElementById('property-inspector')
-    const load = (jsn) => { if (jsn && jsn.param && jsn.param.metric) sel.value = jsn.param.metric }
+    let wanted = 'C:'
+    const showDrive = () => { driveRow.hidden = sel.value !== 'drives' }
+    // 드라이브 목록은 whenpc에서 받는다. 꺼져 있으면 저장된 값만 보여 준다
+    const addDrive = (name, label) => { if (![...drive.options].some((o) => o.value === name)) drive.add(new Option(label ? `${name} ${label}` : name, name)) }
+    fetch('http://127.0.0.1:37631/state').then((r) => r.json()).then((s) => {
+      for (const d of (s.metrics && s.metrics.drives) || []) addDrive(d.name, d.label)
+    }).catch(() => {}).finally(() => { addDrive(wanted); drive.value = wanted })
+    const load = (jsn) => {
+      const p = jsn && jsn.param
+      if (!p) return
+      if (p.metric) sel.value = p.metric
+      if (p.drive) { wanted = p.drive; addDrive(wanted); drive.value = wanted }
+      showDrive()
+    }
     $UD.connect()
     $UD.onConnected(() => {
       document.querySelector('.uspi-wrapper').classList.remove('hidden')
-      form.addEventListener('change', () => $UD.sendParamFromPlugin({ metric: sel.value }))
+      showDrive()
+      form.addEventListener('change', () => {
+        showDrive()
+        $UD.sendParamFromPlugin({ metric: sel.value, drive: drive.value })
+      })
     })
     $UD.onAdd(load)
     $UD.onParamFromApp(load)

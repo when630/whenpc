@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>whenpc</title>
+  <link rel="stylesheet" href="../libs/css/uspi.css">
+  <style>.note { color: #9a9a9a; font-size: 12px; line-height: 1.5; padding: 4px 0 0; }</style>
+</head>
+<body>
+  <div class="uspi-wrapper hidden">
+    <form id="property-inspector">
+      <div class="uspi-item">
+        <div class="uspi-item-label">바꿀 대상</div>
+        <select class="uspi-item-value select" name="target" id="target">
+          <option value="widget">위젯</option>
+          <option value="deck">덱 키</option>
+        </select>
+      </div>
+    </form>
+    <div class="note">지금 테마를 그 색 그대로 보여 줘요. 누르면 같은 스킨 안에서 다음 테마로 바꿔요. 덱 키를 고르면 whenpc 설정 → 스트림덱 키에서 「위젯과 같은 스킨·테마」를 끈 경우에만 덱 키 테마가 따로 바뀌고, 켜져 있으면 위젯과 함께 바뀌어요.</div>
+  </div>
+  <script src="../libs/js/constants.js"></script>
+  <script src="../libs/js/eventEmitter.js"></script>
+  <script src="../libs/js/timers.js"></script>
+  <script src="../libs/js/utils.js"></script>
+  <script src="../libs/js/ulanziApi.js"></script>
+  <script>
+    const sel = document.getElementById('target')
+    const form = document.getElementById('property-inspector')
+    const load = (jsn) => { if (jsn && jsn.param && jsn.param.target) sel.value = jsn.param.target }
+    $UD.connect()
+    $UD.onConnected(() => {
+      document.querySelector('.uspi-wrapper').classList.remove('hidden')
+      form.addEventListener('change', () => $UD.sendParamFromPlugin({ target: sel.value }))
+    })
+    $UD.onAdd(load)
+    $UD.onParamFromApp(load)
+  </script>
+</body>
+</html>
