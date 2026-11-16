@@ -25,6 +25,7 @@ npm start
 | `src/lhm.js` | (선택) LibreHardwareMonitor에서 온도를 읽는다. |
 | `src/renderer/` | 위젯(`index.html`)과 설정 창(`settings.html`) UI. 스파크라인은 canvas로 그린다. |
 | `src/updater.js` | GitHub Releases 자동 업데이트(electron-updater). |
+| `src/watchdog.js` | 위젯 렌더러 감시. CPU가 1분 넘게 80% 이상이거나 메모리가 1.5GB를 넘으면 CPU 프로파일과 직전 이벤트 기록을 `%APPDATA%\whenpc\diagnostics`에 남기고 렌더러를 새 프로세스로 다시 띄운다. 트레이의 "진단 기록 폴더 열기"로 연다. |
 | `src/deck.js` | 스트림덱 플러그인용 로컬 통로(`127.0.0.1:37631`). 사용량과 위젯 상태를 SSE로 보내고, 위젯 숨기기/보이기를 받는다. |
 | `integrations/ulanzi/` | Ulanzi 덱(D200 등) 플러그인. 앱 빌드에는 들어가지 않는다. |
 
@@ -63,6 +64,8 @@ Ulanzi 덱 키에 사용량을 보여 주고, 키를 눌러 위젯을 숨기거�
 ## 개발용
 
 `WHENPC_SNAPSHOT=out.png npm start`로 실행하면 8초 뒤 위젯 화면을 PNG로 저장하고 종료한다. 대기 시간은 `WHENPC_SNAPSHOT_DELAY`(ms)로 조정한다.
+
+`WHENPC_WATCHDOG_SAMPLE_MS=2000`을 주면 렌더러 감시 주기가 15초에서 2초로 줄어 감시 동작을 빨리 확인할 수 있다. `.cpuprofile`은 Chrome DevTools의 Performance 패널에 끌어다 놓으면 열린다.
 
 ## 배포와 자동 업데이트
 

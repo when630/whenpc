@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, screen, powerMonitor, globalShortcut } = require('electron');
+const { app, BrowserWindow, Tray, Menu, nativeImage, nativeTheme, ipcMain, screen, powerMonitor, globalShortcut, shell } = require('electron');
 const { spawn } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
@@ -6,6 +6,7 @@ const readline = require('node:readline');
 const { readLhmTemps } = require('./lhm');
 const updater = require('./updater');
 const { DeckBridge } = require('./deck');
+const watchdog = require('./watchdog');
 const { skins: SKINS, themes: GENERATED_THEMES } = require('./themes.json');
 // whenpc-only themes are appended after each skin's generated ones (themes.json is regenerated from whenterminal).
 const EXTRA_THEMES = require('./themes-extra.json').themes;
@@ -136,6 +137,7 @@ function broadcastConfig() {
 }
 
 function applyConfig(patch) {
+  watchdog.note('config', Object.keys(patch).join(','));
   const prev = config;
   config = { ...config, ...patch, items: { ...config.items, ...(patch.items || {}) } };
   delete config.openAtLogin;
@@ -175,6 +177,7 @@ const widgetWidth = () => Math.round((BASE_WIDTH + (config.expanded ? DETAIL_EXT
 
 function setExpanded(on) {
   if (!win || config.expanded === on) return;
+  watchdog.note('expand', on);
   const [x, y] = win.getPosition();
   const [, h] = win.getSize();
   const delta = Math.round(DETAIL_EXTRA * config.scale / 100);
@@ -243,8 +246,8 @@ function createWindow() {
     config.y = ny;
     saveConfig();
   });
-  win.on('show', () => { refreshMenu(); syncCollectorDetail(); deck.changed(); });
-  win.on('hide', () => { refreshMenu(); syncCollectorDetail(); deck.changed(); });
+  win.on('show', () => { watchdog.note('show'); refreshMenu(); syncCollectorDetail(); deck.changed(); });
+  win.on('hide', () => { watchdog.note('hide'); refreshMenu(); syncCollectorDetail(); deck.changed(); });
   win.on('closed', () => { win = null; });
 }
 
@@ -358,6 +361,9 @@ function watchWidget() {
   win.on('always-on-top-changed', (_e, on) => { if (config.alwaysOnTop && !on) setImmediate(applyTopmost); });
   for (const ev of ['resume', 'unlock-screen']) powerMonitor.on(ev, () => setTimeout(() => { guardWidget(); applyTopmost(); }, 1000));
   for (const ev of ['display-added', 'display-removed', 'display-metrics-changed']) screen.on(ev, () => setTimeout(keepOnScreen, 500));
+  for (const ev of ['suspend', 'resume', 'lock-screen', 'unlock-screen']) powerMonitor.on(ev, () => watchdog.note(ev));
+  for (const ev of ['display-added', 'display-removed']) screen.on(ev, () => watchdog.note(ev));
+  screen.on('display-metrics-changed', (_e, d, changed) => watchdog.note('display-metrics-changed', `${d.id}:${changed.join(',')}`));
 }
 
 function openSettings() {
@@ -447,6 +453,9 @@ function buildMenu() {
     },
     { label: '위치 고정 (클릭 통과)', type: 'checkbox', checked: config.locked, click: (i) => applyConfig({ locked: i.checked }) },
     { label: '설정…', click: openSettings },
+    ...(fs.existsSync(watchdog.diagDir())
+      ? [{ label: '진단 기록 폴더 열기', click: () => shell.openPath(watchdog.diagDir()) }]
+      : []),
     ...(updater.getState().status === 'downloaded'
       ? [{ label: `업데이트 설치 후 재시작 (v${updater.getState().version})`, click: updater.install }]
       : []),
@@ -504,7 +513,7 @@ function startCollector() {
     data.temp.cpu = lhm.cpu;
     data.temp.gpu = lhm.gpu;
     data.temp.source = lhm.cpu != null || lhm.gpu != null ? 'lhm' : 'acpi';
-    win?.webContents.send('metrics', data);
+    if (win && !win.webContents.isCrashed()) win.webContents.send('metrics', data);
     deck.setMetrics(data);
   });
 
@@ -535,6 +544,7 @@ app.whenReady().then(() => {
   loadConfig();
   createWindow();
   watchWidget();
+  watchdog.start(() => win?.webContents);
   registerShortcut();
   deck.start();
   createTray();
