@@ -261,7 +261,9 @@ function applyTopmost() {
   if (!win || win.isDestroyed()) return;
   if (config.alwaysOnTop) {
     win.setAlwaysOnTop(true, TOP_LEVEL);
-    win.moveTop();
+    // On Windows moveTop() also shows a hidden window, which brought a widget hidden from the tray
+    // back after unlocking the screen. Raise it only while it is meant to be showing.
+    if (win.isVisible()) win.moveTop();
   } else {
     win.setAlwaysOnTop(false);
   }
