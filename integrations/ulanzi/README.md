@@ -4,7 +4,7 @@ Ulanzi Studio(D200 등) 키에 whenpc 사용량을 보여 주고, 눌러 위젯�
 
 ## 설치
 
-1. `com.ulanzi.whenpc.ulanziPlugin` 폴더를 `%APPDATA%\Ulanzi\UlanziDeck\Plugins\`에 복사한다
+1. [Releases](https://github.com/when630/whenpc/releases/latest)의 `whenpc-ulanzi-plugin-X.Y.Z.zip`을 `%APPDATA%\Ulanzi\UlanziDeck\Plugins\`에 풀거나(v0.2.12부터), 이 저장소의 `com.ulanzi.whenpc.ulanziPlugin` 폴더를 그곳에 복사한다
 2. Ulanzi Studio를 다시 켠다 → 액션 목록에 **whenpc** 분류가 생긴다
 
 플러그인을 고친 뒤에는 다시 복사하고 Ulanzi Studio를 다시 켠다. whenpc는 v0.2.4 이상이어야 하고, 드라이브 용량·위치 고정·상위 프로세스·테마·가동 시간은 v0.2.8 이상이 필요하다.
@@ -25,6 +25,10 @@ Ulanzi Studio(D200 등) 키에 whenpc 사용량을 보여 주고, 눌러 위젯�
 - 상위 프로세스 키가 있는 동안만 whenpc가 프로세스별 사용량을 모은다(CPU를 조금 더 쓴다)
 - 드라이브는 90% 이상 차면 강조색이 된다
 - whenpc가 꺼져 있으면 `OFFLINE`
+
+## 액션 아이콘
+
+`assets/action-*.png`는 키 그림(`plugin/draw.js`)을 FOG DARK와 예시 값으로 그린 것이고, `plugin.png`·`category.png`는 앱 아이콘 BARS다. `npx electron scripts/render-deck-icons.cjs`로 다시 만든다(앱 아이콘이 바뀌었으면 `scripts/render-icons.cjs` 먼저).
 
 ## 디버깅
 
