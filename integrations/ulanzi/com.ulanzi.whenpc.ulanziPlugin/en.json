@@ -20,7 +20,7 @@
     },
     {
       "Name": "Theme",
-      "Tooltip": "Shows the current theme in its own colors. Press for the next theme of the same skin"
+      "Tooltip": "Shows the current theme in its own colors. Press for the next theme (FOG ↔ FOG DARK)"
     },
     {
       "Name": "Uptime",

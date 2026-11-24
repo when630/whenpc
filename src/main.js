@@ -7,16 +7,17 @@ const { readLhmTemps } = require('./lhm');
 const updater = require('./updater');
 const { DeckBridge } = require('./deck');
 const watchdog = require('./watchdog');
-const { skins: SKINS, themes: GENERATED_THEMES } = require('./themes.json');
-// whenpc-only themes are appended after each skin's generated ones (themes.json is regenerated from whenterminal).
-const EXTRA_THEMES = require('./themes-extra.json').themes;
-const THEMES = SKINS.flatMap((s) => [...GENERATED_THEMES, ...EXTRA_THEMES].filter((t) => t.skin === s.id));
+// FOG skin (when* brand "fog + lime"): light and dark themes. Colors are in renderer/themes.css.
+// 'system' is a choice, not a theme: it resolves to FOG or FOG DARK with Windows' app mode.
+const { themes: THEMES } = require('./themes.json');
+const SYSTEM_THEME = { id: 'system', name: 'SYSTEM', note: 'Windows 앱 모드를 따라 FOG ↔ FOG DARK' };
+const THEME_CHOICES = [SYSTEM_THEME.id, ...THEMES.map((t) => t.id)];
 // App icons (build/icons/*.svg → scripts/render-icons.cjs → src/assets/icons/<id>.png).
 // The installer/shortcut icon is fixed at build time (build/icon.png); this choice changes tray and window icons.
 const APP_ICONS = [
   { id: 'bars', name: 'BARS', note: '사용량 막대, 작은 크기에서 가장 또렷함' },
   { id: 'gauge', name: 'GAUGE', note: '원형 게이지' },
-  { id: 'wordmark', name: 'PC_', note: 'whenterminal의 WT_와 짝' },
+  { id: 'wordmark', name: 'PC_', note: 'whencode의 >_와 짝' },
 ];
 const iconPath = () => path.join(__dirname, 'assets', 'icons', `${config.appIcon}.png`);
 
@@ -58,13 +59,10 @@ const defaults = {
   expanded: false,      // detail (process) panel open
   detailSide: 'left',   // which side of the tiles the panel opens on
   detailTab: 'cpu',
-  skin: 'poster',     // whenterminal skins/themes (src/themes.json)
-  theme: 'poster',
-  skinThemes: {},     // last theme picked per skin
+  theme: 'system',    // 'system' (follow Windows) | src/themes.json: fog | fog-dark
   appIcon: 'bars',
-  deckFollow: true,   // stream deck keys use the widget's skin/theme
-  deckSkin: null,     // otherwise these (null = start from the widget's)
-  deckTheme: null,
+  deckFollow: true,   // stream deck keys use the widget's theme
+  deckTheme: null,    // otherwise this one (null = start from the widget's)
   toggleShortcut: 'Ctrl+Alt+W', // global hide/show hotkey (Electron accelerator); '' = off
 };
 let config = structuredClone(defaults);
@@ -82,35 +80,31 @@ function loadConfig() {
   if (typeof config.toggleShortcut !== 'string') config.toggleShortcut = defaults.toggleShortcut;
 }
 
-const themeMeta = (id) => THEMES.find((t) => t.id === id);
+// The theme a choice paints with now. nativeTheme stays on 'system', so shouldUseDarkColors is Windows' app mode.
+const resolveTheme = (id) => (id === SYSTEM_THEME.id ? (nativeTheme.shouldUseDarkColors ? 'fog-dark' : 'fog') : id);
+const themeMeta = (id) => THEMES.find((t) => t.id === resolveTheme(id));
 
-// Keep skin/theme valid and consistent: the theme always belongs to the chosen skin.
+// Keep the theme valid. Settings saved before FOG (whenterminal skins/themes) fall back to the default.
 function normalizeTheme() {
-  if (!SKINS.some((s) => s.id === config.skin)) config.skin = defaults.skin;
-  if (themeMeta(config.theme)?.skin !== config.skin) {
-    const remembered = config.skinThemes?.[config.skin];
-    config.theme = themeMeta(remembered)?.skin === config.skin ? remembered : THEMES.find((t) => t.skin === config.skin).id;
-  }
-  config.skinThemes = { ...config.skinThemes, [config.skin]: config.theme };
-  const t = themeMeta(config.theme);
-  nativeTheme.themeSource = t.dark ? 'dark' : 'light';
-  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.setBackgroundColor(t.colors[0]);
+  delete config.skin;
+  delete config.skinThemes;
+  delete config.deckSkin;
+  if (!THEME_CHOICES.includes(config.theme)) config.theme = defaults.theme;
+  if (settingsWin && !settingsWin.isDestroyed()) settingsWin.setBackgroundColor(themeMeta(config.theme).colors[0]);
 }
 
 // Same rule for the stream deck's own pick. While it follows the widget it mirrors the widget's, so
 // turning "follow" off starts from what the keys already show.
 function normalizeDeckTheme() {
-  if (config.deckFollow) {
-    config.deckSkin = config.skin;
-    config.deckTheme = config.theme;
-    return;
-  }
-  if (!SKINS.some((s) => s.id === config.deckSkin)) config.deckSkin = config.skin;
-  if (themeMeta(config.deckTheme)?.skin !== config.deckSkin) {
-    const widgets = config.skinThemes?.[config.deckSkin];
-    config.deckTheme = themeMeta(widgets)?.skin === config.deckSkin ? widgets : THEMES.find((t) => t.skin === config.deckSkin).id;
-  }
+  if (config.deckFollow || !THEME_CHOICES.includes(config.deckTheme)) config.deckTheme = config.theme;
 }
+
+// Windows switched light/dark: repaint whatever follows it (themeSource is left at its default, 'system').
+nativeTheme.on('updated', () => {
+  if (config.theme !== SYSTEM_THEME.id && config.deckTheme !== SYSTEM_THEME.id) return;
+  normalizeTheme();
+  broadcastConfig();
+});
 
 let saveTimer = null;
 function saveConfig() {
@@ -126,7 +120,8 @@ function saveConfig() {
 }
 
 function publicConfig() {
-  return { ...config, themeDark: !!themeMeta(config.theme)?.dark, openAtLogin: app.getLoginItemSettings(loginItemOptions()).openAtLogin, shortcutOk };
+  const t = themeMeta(config.theme);
+  return { ...config, themeApplied: t.id, themeDark: !!t.dark, openAtLogin: app.getLoginItemSettings(loginItemOptions()).openAtLogin, shortcutOk };
 }
 
 function broadcastConfig() {
@@ -142,11 +137,9 @@ function applyConfig(patch) {
   config = { ...config, ...patch, items: { ...config.items, ...(patch.items || {}) } };
   delete config.openAtLogin;
   delete config.themeDark;
+  delete config.themeApplied;
   delete config.shortcutOk;
   if (typeof config.toggleShortcut !== 'string') config.toggleShortcut = prev.toggleShortcut;
-  // Switching skin restores that skin's last theme (normalizeTheme picks it when the theme no longer fits).
-  if ('skin' in patch && !('theme' in patch)) config.theme = null;
-  if ('deckSkin' in patch && !('deckTheme' in patch)) config.deckTheme = null;
   normalizeTheme();
   normalizeDeckTheme();
   if ('appIcon' in patch) {
@@ -291,7 +284,9 @@ function toggleWidget() {
 const DETAIL_TABS = ['cpu', 'mem', 'gpu', 'io'];
 function deckThemeInfo(id) {
   const t = themeMeta(id);
-  return { id: t.id, name: t.name, skin: t.skin, bg: t.colors[0], ink: t.colors[1], sig: t.colors[2], dark: !!t.dark };
+  const name = id === SYSTEM_THEME.id ? `${SYSTEM_THEME.name} · ${t.name}` : t.name;
+  // skin stays for deck plugins built before FOG (they pick fonts by it)
+  return { id: t.id, name, skin: 'fog', bg: t.colors[0], ink: t.colors[1], sig: t.colors[2], hot: t.hot, dark: !!t.dark };
 }
 const deck = new DeckBridge({
   visible: () => !!win && !win.isDestroyed() && win.isVisible(),
@@ -311,10 +306,8 @@ const deck = new DeckBridge({
   nextTheme: (target) => {
     // The deck has its own theme only when it doesn't follow the widget; otherwise both change together.
     const deckOwn = target === 'deck' && !config.deckFollow;
-    const skin = deckOwn ? config.deckSkin : config.skin;
     const current = deckOwn ? config.deckTheme : config.theme;
-    const list = THEMES.filter((t) => t.skin === skin);
-    const next = list[(list.findIndex((t) => t.id === current) + 1) % list.length].id;
+    const next = THEME_CHOICES[(THEME_CHOICES.indexOf(current) + 1) % THEME_CHOICES.length];
     applyConfig(deckOwn ? { deckTheme: next } : { theme: next });
   },
   openSettings: () => openSettings(),
@@ -404,7 +397,7 @@ function resetPosition() {
 
 // ---------- IPC ----------
 ipcMain.handle('config:get', () => publicConfig());
-ipcMain.handle('themes:get', () => ({ skins: SKINS, themes: THEMES, icons: APP_ICONS }));
+ipcMain.handle('themes:get', () => ({ themes: THEMES, system: SYSTEM_THEME, icons: APP_ICONS }));
 ipcMain.on('config:set', (_e, patch) => {
   if (patch && typeof patch === 'object') applyConfig(patch);
 });

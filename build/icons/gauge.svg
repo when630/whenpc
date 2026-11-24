@@ -1,1 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><rect x="100" y="100" width="824" height="824" rx="185" fill="#ffffff"/><rect x="100" y="100" width="824" height="824" rx="185" fill="none" stroke="#0a0a0a" stroke-width="10"/><g fill="none" stroke-width="96" stroke-linecap="butt" transform="rotate(135 512 532)"><circle cx="512" cy="532" r="240" stroke="#e6e6e6" stroke-dasharray="1131 1508"/><circle cx="512" cy="532" r="240" stroke="#0a0a0a" stroke-dasharray="735 1508"/><circle cx="512" cy="532" r="240" stroke="#ff2a12" stroke-dasharray="0 735 170 1508"/></g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!-- FOG light: fog tile, ink arc, olive tip (lime as a line on fog, as in whencode build/icons/light.svg) -->
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="#E8ECF0"/>
+  <g fill="none" stroke-width="96" stroke-linecap="butt" transform="rotate(135 512 532)">
+    <circle cx="512" cy="532" r="240" stroke="#D0D8E0" stroke-dasharray="1131 1508"/>
+    <circle cx="512" cy="532" r="240" stroke="#151A21" stroke-dasharray="735 1508"/>
+    <circle cx="512" cy="532" r="240" stroke="#476000" stroke-dasharray="0 735 170 1508"/>
+  </g>
+</svg>

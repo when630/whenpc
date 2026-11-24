@@ -88,7 +88,7 @@
       "Icon": "assets/action-theme.png",
       "UUID": "com.ulanzi.ulanzistudio.whenpc.theme",
       "PropertyInspectorPath": "property-inspector/theme.html",
-      "Tooltip": "지금 테마를 그 색 그대로 보여 준다. 누르면 같은 스킨의 다음 테마로 바꾼다",
+      "Tooltip": "지금 테마를 그 색 그대로 보여 준다. 누르면 다음 테마로 바꾼다 (FOG ↔ FOG DARK)",
       "States": [
         {
           "Name": "Theme",

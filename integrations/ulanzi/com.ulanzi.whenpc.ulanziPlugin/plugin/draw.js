@@ -1,23 +1,15 @@
-// 키 화면 그리기 (196×196 PNG). 색은 whenpc가 보내는 테마(바탕·글자·강조), 글꼴은 스킨을 따른다
+// 키 화면 그리기 (196×196 PNG). 색은 whenpc가 보내는 FOG 테마(바탕·글자·라임 강조·빨강 경고)
 /* exported Draw */
 const Draw = (() => {
   const SIZE = 196
   const PAD = 16
   const SANS = "'Segoe UI', 'Malgun Gothic', sans-serif"
   const MONO = "'Cascadia Mono', Consolas, 'Malgun Gothic', monospace"
-  // 스킨별 글꼴 느낌. 덱 WebView에는 whenpc의 글꼴이 없어 Windows 기본 글꼴로 비슷하게 맞춘다
+  // FOG 글꼴 느낌. 덱 WebView에는 whenpc의 글꼴(Pretendard)이 없어 Windows 기본 글꼴로 비슷하게 맞춘다
   //  heavy: 이름·큰 숫자, mid: 보조 글
-  const SKIN = {
-    poster: { font: SANS, mono: MONO, heavy: 900, mid: 700 },
-    soft: { font: SANS, mono: SANS, heavy: 600, mid: 500 },
-    tui: { font: MONO, mono: MONO, heavy: 700, mid: 400 },
-    zen: { font: "Georgia, 'Batang', serif", mono: "Georgia, 'Batang', serif", heavy: 400, mid: 400 },
-    glass: { font: "'Segoe UI Variable Display', " + SANS, mono: SANS, heavy: 300, mid: 400 },
-    ide: { font: "'Cascadia Code', " + MONO, mono: "'Cascadia Code', " + MONO, heavy: 600, mid: 400 },
-    sketch: { font: "'Segoe Print', 'Comic Sans MS', " + SANS, mono: "'Segoe Print', 'Comic Sans MS', " + SANS, heavy: 700, mid: 400 },
-  }
-  let style = SKIN.poster
-  const FALLBACK = { bg: '#0a0a0a', ink: '#ffffff', sig: '#ff2a12', dark: true }
+  const style = { font: SANS, mono: MONO, heavy: 700, mid: 500 }
+  // FOG DARK. sig: 라임(도는 것·고른 것), hot: 빨강(넘친 것). hot이 없는 예전 whenpc면 sig로
+  const FALLBACK = { bg: '#12161c', ink: '#e4e9ef', sig: '#c6ee3a', hot: '#ff8a7a', dark: true }
 
   const LABEL = { cpu: 'CPU', mem: 'MEM', gpu: 'GPU', disk: 'DISK', net: 'NET', temp: 'TEMP' }
 
@@ -36,7 +28,7 @@ const Draw = (() => {
 
   function palette(theme) {
     const t = { ...FALLBACK, ...(theme || {}) }
-    style = SKIN[t.skin] || SKIN.poster
+    if (theme && !theme.hot) t.hot = t.sig
     return { ...t, dim: mix(t.ink, t.bg, 0.55), faint: mix(t.ink, t.bg, 0.85) }
   }
 
@@ -47,7 +39,7 @@ const Draw = (() => {
     ctx.textAlign = 'left'
   }
 
-  /** weight 800 이상은 스킨의 heavy, 그 아래는 mid. mono: 숫자·속도 같은 고정폭 자리 */
+  /** weight 800 이상은 heavy, 그 아래는 mid. mono: 숫자·속도 같은 고정폭 자리 */
   function font(weight, px, mono = false) {
     ctx.font = `${weight >= 800 ? style.heavy : style.mid} ${px}px ${mono ? style.mono : style.font}`
   }
@@ -112,7 +104,7 @@ const Draw = (() => {
   /** 가운데 큰 숫자 + 단위 */
   function big(c, value, unit, hot) {
     font(800, 64)
-    ctx.fillStyle = hot ? c.sig : c.ink
+    ctx.fillStyle = hot ? c.hot : c.ink
     const text = value == null ? '–' : String(value)
     ctx.fillText(text, PAD - 2, 106)
     if (value != null && unit) {
@@ -225,7 +217,7 @@ const Draw = (() => {
     ctx.fillStyle = c.faint
     ctx.fillRect(x, y, w, h)
     if (p == null) return
-    ctx.fillStyle = hot ? c.sig : c.ink
+    ctx.fillStyle = hot ? c.hot : c.ink
     ctx.fillRect(x, y, Math.max(0, Math.min(1, p / 100)) * w, h)
   }
 
@@ -242,7 +234,7 @@ const Draw = (() => {
       ctx.fillText(name, PAD, y)
       font(800, 22, true)
       ctx.textAlign = 'right'
-      ctx.fillStyle = v >= 90 ? c.sig : c.ink
+      ctx.fillStyle = v >= 90 ? c.hot : c.ink
       ctx.fillText(v == null ? '–' : `${Math.round(v)}%`, SIZE - PAD, y)
       ctx.textAlign = 'left'
       hbar(c, PAD, y + 9, SIZE - PAD * 2, 8, v, v >= 90)
@@ -289,7 +281,7 @@ const Draw = (() => {
       ctx.fillText(d.name, PAD, y)
       font(700, 18, true)
       ctx.textAlign = 'right'
-      ctx.fillStyle = used(d) >= 90 ? c.sig : c.dim
+      ctx.fillStyle = used(d) >= 90 ? c.hot : c.dim
       ctx.fillText(free(d), SIZE - PAD, y)
       ctx.textAlign = 'left'
       hbar(c, PAD, y + 9, SIZE - PAD * 2, 8, used(d), used(d) >= 90)
@@ -365,7 +357,7 @@ const Draw = (() => {
       const value = mem ? size(p.mem) : `${p.cpu < 10 ? p.cpu.toFixed(1) : Math.round(p.cpu)}%`
       font(800, 18, true)
       ctx.textAlign = 'right'
-      ctx.fillStyle = ratio >= (mem ? 25 : 50) ? c.sig : c.ink
+      ctx.fillStyle = ratio >= (mem ? 25 : 50) ? c.hot : c.ink
       ctx.fillText(value, SIZE - PAD, y)
       const pw = ctx.measureText(value).width + 8
       ctx.textAlign = 'left'
@@ -401,7 +393,7 @@ const Draw = (() => {
       ctx.fillText(rest, PAD, 134)
     }
     // 오래 켜 둔 PC(7일 이상)는 구분선을 강조색으로
-    ctx.fillStyle = d >= 7 ? c.sig : c.faint
+    ctx.fillStyle = d >= 7 ? c.hot : c.faint
     ctx.fillRect(PAD, 150, SIZE - PAD * 2, 2)
     const boot = new Date(now.getTime() - sec * 1000)
     const hh = String(boot.getHours()).padStart(2, '0')
@@ -416,7 +408,7 @@ const Draw = (() => {
     return png()
   }
 
-  /** 테마 키: 그 테마의 색 그대로 미리보기. info: { name, bg, ink, sig, skin }, target: 'widget' | 'deck' */
+  /** 테마 키: 그 테마의 색 그대로 미리보기. info: { name, bg, ink, sig, hot }, target: 'widget' | 'deck' */
   function themeKey(info, target, theme) {
     const c = palette(info || theme)
     clear(c.bg)

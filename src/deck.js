@@ -8,7 +8,7 @@ const http = require('node:http');
 //   POST /widget/toggle   hide or show the widget (also /widget/show, /widget/hide)
 //   POST /widget/lock     toggle "lock position (click-through)"
 //   POST /widget/detail   show the widget with the process panel open (?tab=cpu|mem|gpu|io)
-//   POST /theme/next      switch to the next theme of the same skin (?target=widget|deck)
+//   POST /theme/next      switch to the next theme, FOG ↔ FOG DARK (?target=widget|deck)
 //   POST /settings/open   open the settings window
 const DECK_PORT = 37631;
 

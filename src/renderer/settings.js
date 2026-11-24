@@ -151,33 +151,23 @@ shortcutBtn.addEventListener('keydown', (e) => {
 });
 $('shortcutClear').addEventListener('click', () => set({ toggleShortcut: '' }));
 
-// ---------- skin & theme ----------
-let catalog = { skins: [], themes: [] };
+// ---------- theme ----------
+let catalog = { themes: [], system: null };
 
 function radio(el, checked) {
   el.setAttribute('role', 'radio');
   el.setAttribute('aria-checked', String(checked));
 }
 
-// el: container, skin: selected skin id, pick(id): called on click. Shared by the widget and deck pickers.
-function renderSkins(el, skin, pick) {
-  el.replaceChildren(...catalog.skins.map((s) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'skin-card';
-    radio(b, s.id === skin);
-    const name = document.createElement('b');
-    name.textContent = s.name;
-    const note = document.createElement('span');
-    note.textContent = s.note;
-    b.append(name, note);
-    b.addEventListener('click', () => pick(s.id));
-    return b;
-  }));
-}
-
-function renderThemes(el, skin, theme, pick) {
-  el.replaceChildren(...catalog.themes.filter((t) => t.skin === skin).map((t) => {
+// el: container, theme: selected theme id, pick(id): called on click. Shared by the widget and deck pickers.
+// The SYSTEM choice comes first; its sample is FOG and FOG DARK split diagonally.
+function renderThemes(el, theme, pick) {
+  const [light, dark] = catalog.themes;
+  const system = catalog.system && {
+    ...catalog.system,
+    colors: [`linear-gradient(135deg, ${light.colors[0]} 50%, ${dark.colors[0]} 50%)`, light.colors[1], light.colors[2]],
+  };
+  el.replaceChildren(...[system, ...catalog.themes].filter(Boolean).map((t) => {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'theme-chip';
@@ -225,17 +215,12 @@ function renderIcons(c) {
 function render(c) {
   config = c;
   const html = document.documentElement;
-  html.dataset.skin = c.skin;
-  html.dataset.theme = c.theme;
+  html.dataset.theme = c.themeApplied;
   html.toggleAttribute('data-dark', !!c.themeDark);
-  renderSkins($('skins'), c.skin, (id) => set({ skin: id }));
-  renderThemes($('themes'), c.skin, c.theme, (id) => set({ theme: id }));
+  renderThemes($('themes'), c.theme, (id) => set({ theme: id }));
   $('deckFollow').checked = !!c.deckFollow;
   $('deckPick').hidden = !!c.deckFollow;
-  if (!c.deckFollow) {
-    renderSkins($('deckSkins'), c.deckSkin, (id) => set({ deckSkin: id }));
-    renderThemes($('deckThemes'), c.deckSkin, c.deckTheme, (id) => set({ deckTheme: id }));
-  }
+  if (!c.deckFollow) renderThemes($('deckThemes'), c.deckTheme, (id) => set({ deckTheme: id }));
   renderIcons(c);
   for (const [k, { input, row, parent }] of Object.entries(itemInputs)) {
     input.checked = !!c.items[k];

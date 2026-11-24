@@ -236,10 +236,6 @@ function render(m) {
   t.spark.push(m.net.rx, m.net.tx);
   t.subs[0].replaceChildren(...dots([`↓ ${rate(m.net.rx)}`, '--net'], [`↑ ${rate(m.net.tx)}`, '--net2']));
 
-  // IDE skin status bar
-  $('#sb-left').textContent = `CPU ${Math.round(m.cpu.util)}%  ·  MEM ${Math.round(memP)}%  ·  GPU ${Math.round(m.gpu.util)}%`;
-  $('#sb-right').textContent = m.sys ? `가동 ${uptimeText(m.sys.uptime)}` : '';
-
   // Temperature
   t = tiles.temp;
   const temp = m.temp;
@@ -267,8 +263,7 @@ let scale = 1;
 function applyConfig(c) {
   scale = c.scale / 100;
   const html = document.documentElement;
-  html.dataset.skin = c.skin;
-  html.dataset.theme = c.theme;
+  html.dataset.theme = c.themeApplied; // 'system' resolves to fog / fog-dark in main
   html.toggleAttribute('data-dark', !!c.themeDark);
   const root = document.documentElement.style;
   root.setProperty('--solid', String(1 - c.transparency / 100));

@@ -5,15 +5,7 @@
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; font-src 'self' data:; img-src 'self' data:">
   <title>whenpc 설정</title>
   <link rel="stylesheet" href="../../node_modules/pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css">
-  <link rel="stylesheet" href="../../node_modules/@fontsource/archivo/900.css">
-  <link rel="stylesheet" href="../../node_modules/@fontsource/black-han-sans/400.css">
-  <link rel="stylesheet" href="../../node_modules/@fontsource/geist-mono/400.css">
-  <link rel="stylesheet" href="../../node_modules/@fontsource/geist-mono/500.css">
-  <link rel="stylesheet" href="../../node_modules/@fontsource/noto-serif-kr/400.css">
-  <link rel="stylesheet" href="../../node_modules/@fontsource/gaegu/400.css">
-  <link rel="stylesheet" href="../../node_modules/@fontsource/gaegu/700.css">
   <link rel="stylesheet" href="themes.css">
-  <link rel="stylesheet" href="themes-extra.css">
   <link rel="stylesheet" href="ui.css">
   <link rel="stylesheet" href="settings.css">
 </head>
@@ -30,11 +22,6 @@
   <main>
 
     <section>
-      <h2>스킨</h2>
-      <div class="skins" id="skins" role="radiogroup" aria-label="스킨"></div>
-    </section>
-
-    <section>
       <h2>테마</h2>
       <div class="themes" id="themes" role="radiogroup" aria-label="테마"></div>
     </section>
@@ -49,17 +36,15 @@
       <h2>스트림덱 키</h2>
       <div class="group">
         <label class="row">
-          <span class="row-text">위젯과 같은 스킨·테마<small>끄면 Ulanzi 덱 키에 쓸 스킨과 테마를 따로 고릅니다</small></span>
+          <span class="row-text">위젯과 같은 테마<small>끄면 Ulanzi 덱 키에 쓸 테마를 따로 고릅니다</small></span>
           <input type="checkbox" class="switch" id="deckFollow">
         </label>
       </div>
       <div id="deckPick" class="deck-pick" hidden>
-        <h3>덱 스킨</h3>
-        <div class="skins" id="deckSkins" role="radiogroup" aria-label="덱 스킨"></div>
         <h3>덱 테마</h3>
         <div class="themes" id="deckThemes" role="radiogroup" aria-label="덱 테마"></div>
       </div>
-      <p class="hint">덱 키는 테마의 색과 스킨의 글꼴 느낌을 따릅니다. whenpc 덱 플러그인이 설치되어 있어야 합니다.</p>
+      <p class="hint">덱 키는 테마의 색을 따릅니다. whenpc 덱 플러그인이 설치되어 있어야 합니다.</p>
     </section>
 
     <section>

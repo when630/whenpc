@@ -1,4 +1,4 @@
-/* Settings window. Colors/shape tokens come from themes.css + ui.css (same skin & theme as the widget). */
+/* Settings window. Colors/shape tokens come from themes.css + ui.css (same theme as the widget). */
 :root {
   --swatch-cpu: var(--cpu);
   --swatch-mem: var(--mem);
@@ -9,10 +9,6 @@
   --swatch-clock: var(--ink);
   --panel: var(--paper);
 }
-:root[data-skin='soft'] { --panel: var(--card); }
-:root[data-skin='glass'] { --panel: var(--glass); }
-:root[data-skin='sketch'] { --panel: var(--island); }
-:root[data-skin='poster'], :root[data-skin='tui'], :root[data-skin='zen'] { --panel: var(--paper); }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -28,7 +24,6 @@ body {
   -webkit-font-smoothing: antialiased;
   border: 1px solid var(--border);
 }
-:root[data-skin='sketch'] body { --surface-size: 20px 20px; }
 
 /* Frameless window: this header is the drag handle. */
 .titlebar {
@@ -39,10 +34,7 @@ body {
   padding: 20px 14px 14px 22px;
   border-bottom: 1px solid var(--border);
 }
-:root[data-skin='poster'] .titlebar { border-bottom: 6px solid var(--line); }
-:root[data-skin='ide'] .titlebar { background: var(--bar-bg); }
 h1 { font-family: var(--font-title); font-size: 22px; font-weight: var(--title-weight); }
-:root[data-skin='poster'] h1 { font-size: 30px; }
 .lead { color: var(--muted); margin-top: 4px; }
 #close {
   app-region: no-drag;
@@ -60,7 +52,6 @@ h2 {
   font-family: var(--font-label); font-size: 11.5px; font-weight: var(--label-weight);
   text-transform: var(--label-case); color: var(--muted); letter-spacing: 0.06em; margin: 0 0 8px 4px;
 }
-:root[data-skin='sketch'] h2 { font-size: 15px; letter-spacing: 0; }
 
 .group {
   position: relative;
@@ -71,14 +62,9 @@ h2 {
   backdrop-filter: var(--tile-blur, none);
   overflow: hidden;
 }
-:root[data-skin='glass'] .group { --tile-blur: blur(20px) saturate(1.6); border: 1px solid var(--glass-stroke); }
-:root[data-skin='zen'] .group { border: 0; background: transparent; }
 
 .row, .field { padding: 12px 14px; }
 .row + .row, .row + .field, .field + .row, .field + .field { border-top: 1px solid var(--border); }
-:root[data-skin='poster'] .row + .row, :root[data-skin='poster'] .row + .field,
-:root[data-skin='poster'] .field + .row, :root[data-skin='poster'] .field + .field { border-top-width: 2px; }
-:root[data-skin='zen'] .row, :root[data-skin='zen'] .field { padding-left: 0; padding-right: 0; }
 
 .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; cursor: pointer; }
 div.row { cursor: default; }
@@ -88,26 +74,9 @@ div.row { cursor: default; }
 .row.disabled { opacity: 0.4; pointer-events: none; }
 
 .swatch { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--sw); margin-right: 8px; }
-:root[data-skin='poster'] .swatch, :root[data-skin='tui'] .swatch { border-radius: 0; }
 .item-name { display: flex; align-items: center; }
 
-/* ---------- skin & theme pickers ---------- */
-.skins { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 8px; }
-.skin-card {
-  font: inherit; color: var(--text); text-align: left; cursor: pointer;
-  display: flex; flex-direction: column; gap: 4px;
-  padding: 10px 11px; min-height: 76px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: var(--r-tile);
-}
-.skin-card b { font-family: 'WT Display', 'Archivo', var(--font); font-weight: 400; font-size: 14px; letter-spacing: 0.02em; }
-.skin-card span { color: var(--muted); font-size: 11px; line-height: 1.35; }
-.skin-card:hover { border-color: var(--muted); }
-.skin-card[aria-checked="true"] { border-color: var(--ac); box-shadow: inset 0 0 0 1px var(--ac); }
-:root[data-skin='poster'] .skin-card[aria-checked="true"] { background: var(--ink); color: var(--paper); }
-:root[data-skin='poster'] .skin-card[aria-checked="true"] span { color: var(--gray-3); }
-
+/* ---------- theme picker ---------- */
 .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 10px; }
 .theme-chip {
   font: inherit; color: var(--text); cursor: pointer; text-align: left;
@@ -120,16 +89,16 @@ div.row { cursor: default; }
   display: flex; align-items: flex-end; padding: 7px 9px;
   background: var(--s-bg); color: var(--s-ink);
   border: 1px solid var(--border);
-  font-family: 'WT Display', 'Archivo', var(--font); font-size: 18px; line-height: 1;
+  font-family: var(--font); font-size: 18px; font-weight: 600; line-height: 1;
 }
 .theme-chip .sample::after {
   content: ""; position: absolute; right: 9px; bottom: 9px;
-  width: 16px; height: 6px; background: var(--s-sig);
+  width: 16px; height: 6px; border-radius: 3px; background: var(--s-sig);
 }
 .theme-chip .name { font-size: 11.5px; font-weight: 600; }
 .theme-chip .note { color: var(--muted); font-size: 10.5px; line-height: 1.35; margin-top: -4px; }
 .theme-chip:hover .sample { border-color: var(--muted); }
-.theme-chip[aria-checked="true"] .sample { outline: 2px solid var(--ac); outline-offset: 2px; }
+.theme-chip[aria-checked="true"] .sample { outline: 2px solid var(--ac-line); outline-offset: 2px; }
 
 /* ---------- switch ---------- */
 .switch {
@@ -151,9 +120,7 @@ div.row { cursor: default; }
 }
 .switch:checked { background: var(--ac); }
 .switch:checked::after { transform: translateX(16px); background: var(--on-ac); }
-:root[data-skin='poster'] .switch, :root[data-skin='tui'] .switch { border-radius: 0; }
-:root[data-skin='poster'] .switch::after, :root[data-skin='tui'] .switch::after { border-radius: 0; box-shadow: none; }
-.switch:focus-visible { outline: 2px solid var(--ac); outline-offset: 2px; }
+.switch:focus-visible { outline: 2px solid var(--ac-line); outline-offset: 2px; }
 
 /* ---------- range ---------- */
 .field-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
@@ -170,14 +137,12 @@ input[type="range"]::-webkit-slider-thumb {
   appearance: none;
   width: 18px; height: 18px; border-radius: 50%;
   background: var(--paper);
-  border: 3px solid var(--ac);
+  border: 3px solid var(--ac-line);
   box-shadow: 0 1px 4px var(--shadow);
   transition: transform 0.15s;
 }
-:root[data-skin='poster'] input[type="range"]::-webkit-slider-thumb,
-:root[data-skin='tui'] input[type="range"]::-webkit-slider-thumb { border-radius: 0; }
 input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.15); }
-input[type="range"]:focus-visible { outline: 2px solid var(--ac); outline-offset: 4px; }
+input[type="range"]:focus-visible { outline: 2px solid var(--ac-line); outline-offset: 4px; }
 .scale-hints { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-top: 8px; }
 
 button {
@@ -200,8 +165,8 @@ button.primary { background: var(--ac); color: var(--on-ac); font-weight: 600; b
 
 /* ---------- shortcut recorder ---------- */
 .shortcut { display: flex; gap: 6px; flex-shrink: 0; }
-.kbd { font-family: 'Geist Mono', monospace; font-size: 12px; min-width: 96px; white-space: nowrap; }
-.kbd.recording { border-color: var(--ac); color: var(--ac); }
+.kbd { font-family: var(--mono); font-size: 12px; min-width: 96px; white-space: nowrap; }
+.kbd.recording { border-color: var(--ac-line); color: var(--ac-line); }
 #shortcutHint.warn { color: var(--temp); }
 
 /* ---------- app icon picker ---------- */
@@ -215,8 +180,8 @@ button.primary { background: var(--ac); color: var(--on-ac); font-weight: 600; b
   border-radius: var(--r-tile);
 }
 .icon-card img { width: 52px; height: 52px; margin-bottom: 4px; }
-.icon-card b { font-family: 'WT Display', 'Archivo', var(--font); font-weight: 400; font-size: 13px; letter-spacing: 0.02em; }
+.icon-card b { font-family: var(--font); font-weight: 700; font-size: 13px; letter-spacing: 0.02em; }
 .icon-card span { color: var(--muted); font-size: 10.5px; line-height: 1.35; }
 .icon-card:hover { border-color: var(--muted); }
-.icon-card[aria-checked="true"] { border-color: var(--ac); box-shadow: inset 0 0 0 1px var(--ac); }
+.icon-card[aria-checked="true"] { border-color: var(--ac-line); box-shadow: inset 0 0 0 1px var(--ac-line); }
 .hint { color: var(--muted); font-size: 11px; margin: 8px 4px 0; }

@@ -33,16 +33,18 @@ GPU 사용률은 작업 관리자와 같은 방식으로 계산한다. 엔진별
 
 ## 스킨과 테마
 
-whenterminal과 같은 스킨 7개(POSTER · SOFT · TUI · ZEN · GLASS · IDE · SKETCH)와 테마 35개(whenterminal 34개 + whenpc 전용 NOIR)를 설정 창에서 고른다. 스킨은 모양(선, 모서리, 글꼴, 배치)을, 테마는 색을 정한다. 테마는 스킨마다 따로 있고, 스킨을 바꾸면 그 스킨에서 마지막으로 고른 테마로 돌아간다. 위젯, 상세 패널, 설정 창에 모두 적용된다.
+스킨은 FOG 하나다. when* 시리즈 브랜드 "안개 + 라임"으로, whencode(`src/renderer/src/styles/tokens.css`)·whendesk(`renderer/themes.css`)와 같은 색을 쓴다. 테마는 FOG(밝게)와 FOG DARK(어둡게) 둘이고, 설정 창에서 둘 중 하나나 SYSTEM(기본, Windows 앱 모드를 따라 바뀜)을 고른다. 위젯, 상세 패널, 설정 창, 덱 키에 모두 적용된다.
 
-- 색 토큰(`src/renderer/themes.css`)과 스킨·테마 목록(`src/themes.json`)은 whenterminal에서 생성한다. 손으로 고치지 말고, whenterminal이 바뀌면 `node scripts/import-whenterminal-themes.mjs [whenterminal 경로]`로 다시 가져온다(기본 경로 `../whenterminal`).
-- whenpc에만 있는 테마는 `src/themes-extra.json`(목록)과 `src/renderer/themes-extra.css`(색 토큰)에 둔다. 가져오기 스크립트가 건드리지 않고, 각 스킨의 기존 테마 뒤에 붙는다.
-- 스킨 모양은 whenpc 화면에 맞게 다시 구현했다(`src/renderer/ui.css`, `style.css`, `settings.css`의 `data-skin` 규칙).
-- 글꼴은 whenterminal과 같은 패키지를 쓴다: Pretendard, Archivo, Black Han Sans, Geist Mono, Noto Serif KR, Gaegu. 설치 파일에는 실제로 쓰는 굵기의 woff2만 넣는다(`package.json`의 `build.files`).
+- 바탕은 안개색, 타일·설정 묶음은 한 단 밝은 카드색. 둥글기는 버튼·줄 6px, 타일 10px, 카드 14px.
+- 라임은 고른 것·누를 것(스위치, 고른 탭, 펼침 버튼, 주 버튼)에만 쓴다. 밝은 테마에서 라임을 선으로 그어야 할 때(고른 칸 테두리, 포커스)는 진한 올리브(`--accent-ink`)를 쓴다.
+- 빨강은 넘친 것(사용률 과부하, 온도, 닫기)에만 쓴다.
+- 색은 `src/renderer/themes.css`, 테마 목록은 `src/themes.json`, 색을 화면 역할에 잇는 것과 모양은 `src/renderer/ui.css`.
+- 0.2.10 이전 설정의 whenterminal 스킨·테마는 SYSTEM으로 바뀐다.
+- 글꼴은 Pretendard(설치 파일에 포함), 고정폭은 Cascadia Code(Windows 기본).
 
 ## 아이콘
 
-whenterminal 앱 아이콘과 같은 계열(검정·흰색에 신호색 빨강 하나, 둥근 정사각형 타일)이다. 원본은 `build/icons/*.svg`이고 기본은 `bars`다. 설정 창의 "앱 아이콘"에서 BARS · GAUGE · PC_ 중에 고르면 트레이와 창 아이콘이 바로 바뀐다. 설치 파일과 바로가기 아이콘은 빌드 때 정해지므로 BARS로 고정이다.
+FOG 색(먹색·안개색에 라임 하나, 둥근 정사각형 타일)으로, whencode 앱 아이콘(`>_`)과 같은 계열이다. GAUGE만 밝은 안개색 타일이고 라임 대신 진한 올리브를 쓴다(밝은 면에서 라임은 흐리다). 원본은 `build/icons/*.svg`이고 기본은 `bars`다. 설정 창의 "앱 아이콘"에서 BARS · GAUGE · PC_ 중에 고르면 트레이와 창 아이콘이 바로 바뀐다. 설치 파일과 바로가기 아이콘은 빌드 때 정해지므로 BARS로 고정이다.
 
 ```sh
 npx electron scripts/render-icons.cjs   # SVG → PNG, 미리보기 build/icons/preview.png, src/assets/icons/*.png와 build/icon.png 갱신
